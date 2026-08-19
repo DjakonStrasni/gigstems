@@ -4,207 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GigStems - Prototip v1.0.0</title>
-    <style>
-        /* Osnovni stilovi za mračnu temu prilagođeni mobilnim telefonima */
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background-color: #0f172a;
-            color: #f8fafc;
-            margin: 0;
-            padding: 15px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            -webkit-tap-highlight-color: transparent;
-        }
-
-        h1 {
-            color: #10b981;
-            margin: 10px 0 2px 0;
-            font-size: 1.8em;
-            font-weight: 800;
-            letter-spacing: -0.05em;
-        }
-
-        p.subtitle {
-            color: #94a3b8;
-            margin: 0 0 20px 0;
-            font-size: 0.9em;
-            text-align: center;
-        }
-
-        /* Kontrolna tabla plejera */
-        .controls-master {
-            background: #1e293b;
-            padding: 15px;
-            border-radius: 12px;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            width: 100%;
-            max-width: 500px;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
-            margin-bottom: 20px;
-            box-sizing: border-box;
-        }
-
-        .buttons-row {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        button {
-            border: none;
-            padding: 12px 20px;
-            border-radius: 8px;
-            font-weight: bold;
-            cursor: pointer;
-            font-size: 0.95em;
-            transition: all 0.2s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-        }
-
-        button:active {
-            transform: scale(0.95);
-        }
-
-        button:disabled {
-            background-color: #475569 !important;
-            color: #94a3b8 !important;
-            cursor: not-allowed;
-        }
-
-        .btn-play { background: #10b981; color: #022c22; width: 60%; }
-        .btn-stop { background: #ef4444; color: #fef2f2; width: 35%; }
-
-        /* Vremenski prikaz i traka za premotavanje */
-        .time-container {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            font-family: monospace;
-            font-size: 1.1em;
-            color: #38bdf8;
-        }
-
-        .seekbar-container {
-            width: 100%;
-            display: flex;
-            align-items: center;
-        }
-
-        .seekbar {
-            width: 100%;
-            height: 6px;
-            background: #475569;
-            border-radius: 3px;
-            outline: none;
-            -webkit-appearance: none;
-            cursor: pointer;
-        }
-
-        .seekbar::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            width: 16px;
-            height: 16px;
-            border-radius: 50%;
-            background: #38bdf8;
-            cursor: pointer;
-        }
-
-        /* Mikseta - Kanali */
-        .mixer {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            width: 100%;
-            max-width: 500px;
-            box-sizing: border-box;
-        }
-
-        .track-strip {
-            background: #1e293b;
-            padding: 12px 15px;
-            border-radius: 10px;
-            display: grid;
-            grid-template-columns: 2fr 3fr 1.2fr 1.2fr;
-            align-items: center;
-            gap: 10px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-        }
-
-        .track-name {
-            font-size: 0.9em;
-            font-weight: 600;
-            color: #f1f5f9;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-
-        .volume-slider-container {
-            display: flex;
-            align-items: center;
-        }
-
-        .volume-slider {
-            width: 100%;
-            height: 4px;
-            background: #475569;
-            border-radius: 2px;
-            outline: none;
-            -webkit-appearance: none;
-        }
-
-        .volume-slider::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            width: 14px;
-            height: 14px;
-            border-radius: 50%;
-            background: #10b981;
-            cursor: pointer;
-        }
-
-        .btn-mute {
-            background: #334155;
-            color: #cbd5e1;
-            font-size: 0.75em;
-            padding: 6px 0;
-            border-radius: 6px;
-        }
-
-        .btn-mute.active {
-            background: #ef4444;
-            color: #ffffff;
-        }
-
-        .btn-solo {
-            background: #334155;
-            color: #cbd5e1;
-            font-size: 0.75em;
-            padding: 6px 0;
-            border-radius: 6px;
-        }
-
-        .btn-solo.active {
-            background: #eab308;
-            color: #0f172a;
-        }
-
-        /* Status učitavanja */
-        .status-box {
-            text-align: center;
-            color: #38bdf8;
-            font-size: 0.9em;
-            margin-top: 10px;
-            font-weight: bold;
-        }
-    </style>
+    <!-- #NOVO v1.0.0 - Eksterni CSS poziv radi očuvanja konzistentnosti dizajna -->
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
@@ -239,7 +40,7 @@
     <div id="mixerContainer" class="mixer"></div>
 
     <script>
-        // #NOVO v1.0.0 - Inicijalizacija Web Audio API-ja i globalnih promenljivih
+        // Inicijalizacija Web Audio API-ja i globalnih promenljivih
         let audioCtx;
         let audioBuffers = [];
         let sourceNodes = [];
@@ -250,11 +51,11 @@
         let totalDuration = 0;
         let timerInterval;
 
-        // Tri besplatna, stabilna i CORS-bezbedna audio fajla za testiranje sinhronizacije
+        // #NOVO v1.0.0 - Zamenjene putanje sa Wikimedia Commons linkovima koji garantuju aktivan CORS i uspešno učitavanje u pretraživaču
         const testTracks = [
-            { name: "Bubanj (Drums)", url: "https://actions.google.com/sounds/v1/science_fiction/teleport.ogg" },
-            { name: "Bas (Bass)", url: "https://actions.google.com/sounds/v1/science_fiction/ambient_space_machine.ogg" },
-            { name: "Klavijatura (Keys)", url: "https://actions.google.com/sounds/v1/science_fiction/organic_synthesizer_sweep.ogg" }
+            { name: "Klik/Bubanj (Metronome)", url: "https://upload.wikimedia.org/wikipedia/commons/4/41/200_beats_per_minute_metronome.ogg" },
+            { name: "Bas/Ton (Synth Bass)", url: "https://upload.wikimedia.org/wikipedia/commons/0/03/Sine_wave_440Hz.ogg" },
+            { name: "Melodija (Acoustic Guitar)", url: "https://upload.wikimedia.org/wikipedia/commons/2/2a/C_major_scale_on_acoustic_guitar.ogg" }
         ];
 
         // Automatsko pokretanje učitavanja čim se stranica otvori
@@ -262,7 +63,7 @@
             initAudioAndLoad();
         };
 
-        // #NOVO v1.0.0 - Inicijalizacija audio konteksta i asinhrono preuzimanje fajlova u RAM
+        // Inicijalizacija audio konteksta i asinhrono preuzimanje fajlova u RAM
         async function initAudioAndLoad() {
             try {
                 audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -271,6 +72,12 @@
                 for (let i = 0; i < testTracks.length; i++) {
                     statusLabel.innerText = `Učitavam kanal: ${testTracks[i].name}...`;
                     const response = await fetch(testTracks[i].url);
+                    
+                    // #NOVO v1.0.0 - Dodata provera statusa odgovora kako bismo znali ako neki fajl padne tokom fetch-a
+                    if (!response.ok) {
+                        throw new Error(`HTTP greška! status: ${response.status} na fajlu ${testTracks[i].name}`);
+                    }
+                    
                     const arrayBuffer = await response.arrayBuffer();
                     const decodedData = await audioCtx.decodeAudioData(arrayBuffer);
                     
@@ -293,7 +100,7 @@
             }
         }
 
-        // #NOVO v1.0.0 - Dinamičko kreiranje miksete na ekranu
+        // Dinamičko kreiranje miksete na ekranu
         function buildMixer() {
             const container = document.getElementById('mixerContainer');
             container.innerHTML = '';
@@ -318,7 +125,7 @@
             });
         }
 
-        // #NOVO v1.0.0 - Kontrola jačine kanala
+        // Kontrola jačine kanala
         function setVolume(index, value) {
             const isMuted = document.getElementById(`muteBtn-${index}`).classList.contains('active');
             if (!isMuted) {
@@ -326,7 +133,7 @@
             }
         }
 
-        // #NOVO v1.0.0 - Mute funkcionalnost bez zaustavljanja plejera
+        // Mute funkcionalnost bez zaustavljanja plejera
         function toggleMute(index) {
             const btn = document.getElementById(`muteBtn-${index}`);
             const slider = btn.parentNode.querySelector('.volume-slider');
@@ -339,7 +146,7 @@
             }
         }
 
-        // #NOVO v1.0.0 - Solo funkcionalnost (utišava sve ostale kanale)
+        // Solo funkcionalnost (utišava sve ostale kanale)
         function toggleSolo(index) {
             const btn = document.getElementById(`soloBtn-${index}`);
             const isSoloActive = btn.classList.toggle('active');
@@ -362,7 +169,7 @@
             });
         }
 
-        // #NOVO v1.0.0 - Play i Pause logika sa sinhronim startom u milisekundu
+        // Play i Pause logika sa sinhronim startom u milisekundu
         function togglePlay() {
             if (audioCtx.state === 'suspended') {
                 audioCtx.resume();
@@ -390,7 +197,7 @@
             }
         }
 
-        // #NOVO v1.0.0 - Pokretanje svih audio čvorova u tačnom vremenskom trenutku
+        // Pokretanje svih audio čvorova u tačnom vremenskom trenutku
         function startSourceNodes(offset) {
             sourceNodes = [];
             audioBuffers.forEach((buffer, index) => {
@@ -417,7 +224,7 @@
             sourceNodes = [];
         }
 
-        // #NOVO v1.0.0 - Potpuno zaustavljanje i resetovanje plejera
+        // Potpuno zaustavljanje i resetovanje plejera
         function stopAudio() {
             stopSourceNodes();
             isPlaying = false;
@@ -428,7 +235,7 @@
             clearInterval(timerInterval);
         }
 
-        // #NOVO v1.0.0 - Logika za premotavanje pesme (Seeking)
+        // Logika za premotavanje pesme (Seeking)
         function onSeek(value) {
             const wasPlaying = isPlaying;
             if (isPlaying) {
@@ -442,7 +249,7 @@
             }
         }
 
-        // #NOVO v1.0.0 - Praćenje vremena i pomeranje klizača tokom reprodukcije
+        // Praćenje vremena i pomeranje klizača tokom reprodukcije
         function updateUI() {
             if (!isPlaying) return;
             const elapsed = pauseOffset + (audioCtx.currentTime - startTime);
