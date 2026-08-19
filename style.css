@@ -1,6 +1,6 @@
 /* ==========================================================================
    GIGSTEMS GLOBAL STYLES (style.css)
-   v1.2.0 • Konzistentan dizajn sa jezičkim selektorom i miksetom
+   v1.2.1 • Konzistentan dizajn sa jezičkim selektorom, master sekcijom i miksetom
    ========================================================================== */
 
 /* Osnovni stilovi za mračnu temu */
@@ -31,7 +31,7 @@ p.subtitle {
     text-align: center;
 }
 
-/* #NOVO v1.2.0 - Jezički selektor na vrhu */
+/* Jezički selektor na vrhu */
 .lang-container {
     display: flex;
     gap: 8px;
@@ -115,6 +115,24 @@ button:disabled {
     background: #ef4444; 
     color: #fef2f2; 
     width: 35%; 
+}
+
+/* #NOVO v1.2.1 - Master kontrolna sekcija unutar kontrolne table */
+.master-volume-container {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: #0f172a; /* Tamnija pozadina koja odvaja master zonu od ostalih kontrola */
+    padding: 10px 12px;
+    border-radius: 8px;
+    margin-top: 5px;
+}
+
+.master-vol-label {
+    font-size: 0.8em;
+    font-weight: bold;
+    color: #94a3b8;
+    white-space: nowrap;
 }
 
 /* Vremenski prikaz i traka za premotavanje */
