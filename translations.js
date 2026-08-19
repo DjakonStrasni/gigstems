@@ -1,10 +1,10 @@
 // ==========================================================================
-// GIGSTEMS TRANSLATIONS - VERZIJA 1.4.0
+// GIGSTEMS TRANSLATIONS - VERZIJA 1.4.01
 // ==========================================================================
 
 const i18n = {
     sr: {
-        subtitle: "v1.4.0 • Cloud Sinhronizacija & Članstvo",
+        subtitle: "v1.4.01 • Cloud Sinhronizacija & Članstvo",
         stopBtn: "Zaustavi",
         playBtn: "Pusti trake",
         pauseBtn: "Pauza",
@@ -43,7 +43,7 @@ const i18n = {
         statusNoFiles: "Nema podržanih audio fajlova (.mp3, .wav, .m4a) u ovom folderu!",
         apiKeyWarning: "Unesi svoj Google API ključ u kod (linija ~143 u index.html) da bi učitao pesme!",
 
-        // #NOVO v1.4.0 - Autentifikacija, Članstvo i SPA Meni
+        // #NOVO v1.4.01 - Autentifikacija, Članstvo i SPA Meni
         navBands: "🎸 Moji Bendovi",
         navRepertoire: "🎵 Repertoar",
         navCalendar: "📅 Kalendar",
@@ -87,7 +87,7 @@ const i18n = {
         emptyNameError: "Naziv ne može biti prazan!"
     },
     en: {
-        subtitle: "v1.4.0 • Cloud Sync & Membership",
+        subtitle: "v1.4.01 • Cloud Sync & Membership",
         stopBtn: "Stop",
         playBtn: "Play Stems",
         pauseBtn: "Pause",
@@ -126,7 +126,7 @@ const i18n = {
         statusNoFiles: "No supported audio files (.mp3, .wav, .m4a) in this folder!",
         apiKeyWarning: "Enter your Google API Key in the code (line ~143 of index.html) to load songs!",
 
-        // #NOVO v1.4.0 - Authentication, Membership and SPA Menu
+        // #NOVO v1.4.01 - Authentication, Membership and SPA Menu
         navBands: "🎸 My Bands",
         navRepertoire: "🎵 Repertoire",
         navCalendar: "📅 Calendar",
