@@ -1,6 +1,6 @@
 /* ==========================================================================
    GIGSTEMS GLOBAL STYLES (style.css)
-   v1.2.1 • Konzistentan dizajn sa jezičkim selektorom, master sekcijom i miksetom
+   v1.3.0 • Konzistentan dizajn sa sklopivim podešavanjima i miksetom
    ========================================================================== */
 
 /* Osnovni stilovi za mračnu temu */
@@ -57,6 +57,114 @@ p.subtitle {
 .btn-lang.active {
     background: #10b981;
     color: #022c22;
+}
+
+/* #NOVO v1.3.0 - Sklopivi panel za Google Drive podešavanja (details/summary) */
+.settings-panel {
+    background: #1e293b;
+    padding: 12px 15px;
+    border-radius: 10px;
+    width: 100%;
+    max-width: 500px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    margin-bottom: 15px;
+    box-sizing: border-box;
+}
+
+.settings-panel[open] {
+    border: 1px solid #10b981;
+}
+
+.settings-panel summary {
+    font-weight: bold;
+    cursor: pointer;
+    color: #10b981;
+    outline: none;
+    user-select: none;
+}
+
+.settings-content {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 12px;
+}
+
+.input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.input-group label {
+    font-size: 0.8em;
+    font-weight: bold;
+    color: #94a3b8;
+}
+
+.settings-input {
+    background: #0f172a;
+    border: 1px solid #475569;
+    color: #f8fafc;
+    padding: 10px;
+    border-radius: 6px;
+    outline: none;
+    font-size: 0.9em;
+    transition: border-color 0.2s;
+}
+
+.settings-input:focus {
+    border-color: #10b981;
+}
+
+.btn-connect {
+    background: #10b981;
+    color: #022c22;
+    padding: 10px;
+    font-weight: bold;
+    border-radius: 6px;
+    cursor: pointer;
+    border: none;
+    width: 100%;
+    margin-top: 5px;
+}
+
+/* #NOVO v1.3.0 - Selektor pesama (Dropdown zona) */
+.song-selector-container {
+    background: #1e293b;
+    padding: 15px;
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+    max-width: 500px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    margin-bottom: 15px;
+    box-sizing: border-box;
+}
+
+.song-selector-label {
+    font-size: 0.85em;
+    font-weight: bold;
+    color: #94a3b8;
+}
+
+.song-select {
+    background: #0f172a;
+    border: 1px solid #475569;
+    color: #f8fafc;
+    padding: 12px;
+    border-radius: 8px;
+    font-size: 1em;
+    cursor: pointer;
+    outline: none;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.song-select:focus {
+    border-color: #10b981;
 }
 
 /* Kontrolna tabla plejera */
@@ -117,12 +225,12 @@ button:disabled {
     width: 35%; 
 }
 
-/* #NOVO v1.2.1 - Master kontrolna sekcija unutar kontrolne table */
+/* Master kontrolna sekcija unutar kontrolne table */
 .master-volume-container {
     display: flex;
     align-items: center;
     gap: 12px;
-    background: #0f172a; /* Tamnija pozadina koja odvaja master zonu od ostalih kontrola */
+    background: #0f172a;
     padding: 10px 12px;
     border-radius: 8px;
     margin-top: 5px;
@@ -265,3 +373,4 @@ button:disabled {
     margin-top: 10px;
     font-weight: bold;
 }
+
