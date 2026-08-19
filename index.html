@@ -3,17 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GigStems - Prototip v1.2.0</title>
+    <title>GigStems - Prototip v1.2.1</title>
     <!-- Poziv eksternog CSS-a radi očuvanja konzistentnosti dizajna -->
     <link rel="stylesheet" href="style.css">
-    <!-- #NOVO v1.2.0 - Eksterni fajl sa prevodima radi lakšeg uređivanja i lokalizacije -->
+    <!-- Eksterni fajl sa prevodima radi lakšeg uređivanja i lokalizacije -->
     <script src="translations.js"></script>
 </head>
 <body>
 
     <h1>GigStems</h1>
-    <!-- Dodat ID za dinamički prevod podnaslova -->
-    <p id="subtitleText" class="subtitle">v1.2.0 • Lokalno učitavanje foldera</p>
+    <!-- ID za dinamički prevod podnaslova -->
+    <p id="subtitleText" class="subtitle">v1.2.1 • Lokalno učitavanje foldera</p>
 
     <!-- Jezički selektor na vrhu ekrana -->
     <div class="lang-container">
@@ -39,6 +39,15 @@
             <button id="playBtn" class="btn-play" onclick="togglePlay()" disabled style="width: 100%;">
                 <span>▶ Pusti trake</span>
             </button>
+        </div>
+
+        <!-- #NOVO v1.2.1 - Globalne (Master) kontrole jačine zvuka i mute u krovnoj tabli -->
+        <div class="master-volume-container">
+            <button id="masterMuteBtn" class="btn-mute" onclick="toggleMasterMute()" style="width: auto; padding: 6px 12px;">UTIŠAJ SVE</button>
+            <div class="volume-slider-container" style="flex-grow: 1; display: flex; align-items: center; justify-content: flex-end; margin-left: 10px;">
+                <span id="masterVolLabel" class="master-vol-label">MASTER:</span>
+                <input type="range" id="masterVolumeSlider" class="volume-slider" min="0" max="1" step="0.01" value="0.8" oninput="setMasterVolume(this.value)" style="margin-left: 10px; width: 100%;">
+            </div>
         </div>
 
         <div class="seekbar-container" style="margin-top: 12px;">
@@ -70,6 +79,10 @@
         let totalDuration = 0;
         let timerInterval;
 
+        // #NOVO v1.2.1 - Globalne promenljive za master kontrolu
+        let masterGainNode; 
+        let isMasterMuted = false;
+
         // Promenljiva za identifikaciju trenutno učitane pesme radi pamćenja miksa
         let currentSongName = "";
 
@@ -84,6 +97,12 @@
         // Automatsko pokretanje čim se stranica otvori
         window.onload = () => {
             setLanguage(currentLang);
+
+            // #NOVO v1.2.1 - Postavljanje inicijalne vrednosti master klizača iz localStorage pre nego što se audio pokrene
+            const savedMasterVol = localStorage.getItem('gigstems_master_volume');
+            if (savedMasterVol !== null) {
+                document.getElementById('masterVolumeSlider').value = savedMasterVol;
+            }
         };
 
         // Funkcija za dinamičku promenu jezika na celom interfejsu bez osvežavanja stranice
@@ -100,6 +119,10 @@
             document.getElementById('loadBtnLabel').innerText = "📁 " + i18n[lang].loadBtn;
             stopBtn.querySelector('span').innerText = i18n[lang].stopBtn;
             
+            // #NOVO v1.2.1 - Prevod za globalne (master) kontrole
+            document.getElementById('masterMuteBtn').innerText = i18n[lang].masterMuteBtn;
+            document.getElementById('masterVolLabel').innerText = i18n[lang].masterVolLabel;
+
             // Prevodimo play/pause taster
             updatePlayBtnUI();
 
@@ -153,6 +176,15 @@
 
             if (!audioCtx) {
                 audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+
+            // #NOVO v1.2.1 - Kreiranje krovnog master regulatora jačine zvuka na nivou celog konteksta
+            if (!masterGainNode) {
+                masterGainNode = audioCtx.createGain();
+                const savedMasterVol = localStorage.getItem('gigstems_master_volume');
+                const initMasterVol = savedMasterVol !== null ? parseFloat(savedMasterVol) : 0.8;
+                masterGainNode.gain.setValueAtTime(isMasterMuted ? 0 : initMasterVol, audioCtx.currentTime);
+                masterGainNode.connect(audioCtx.destination);
             }
 
             audioBuffers = [];
@@ -331,6 +363,33 @@
             saveMixState();
         }
 
+        // #NOVO v1.2.1 - Podešavanje globalne jačine zvuka celog sistema (Master Volume)
+        function setMasterVolume(value) {
+            localStorage.setItem('gigstems_master_volume', value);
+            if (!audioCtx || !masterGainNode) return;
+            
+            if (!isMasterMuted) {
+                masterGainNode.gain.setValueAtTime(value, audioCtx.currentTime);
+            }
+        }
+
+        // #NOVO v1.2.1 - Globalno mutiranje kompletnog zvuka (Master Mute)
+        function toggleMasterMute() {
+            if (!audioCtx || !masterGainNode) return;
+
+            const btn = document.getElementById('masterMuteBtn');
+            isMasterMuted = !isMasterMuted;
+
+            if (isMasterMuted) {
+                btn.classList.add('active');
+                masterGainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+            } else {
+                btn.classList.remove('active');
+                const sliderVal = parseFloat(document.getElementById('masterVolumeSlider').value);
+                masterGainNode.gain.setValueAtTime(sliderVal, audioCtx.currentTime);
+            }
+        }
+
         // Play i Pause logika sa sinhronim startom u milisekundu
         function togglePlay() {
             if (audioCtx.state === 'suspended') {
@@ -364,9 +423,9 @@
                 const source = audioCtx.createBufferSource();
                 source.buffer = buffer;
                 
-                // Povezujemo izvor na kanalni Gain, a kanalni Gain na zvučnike (destination)
+                // #NOVO v1.2.1 - Povezujemo izvor na kanalni Gain, a kanalni Gain na krovni master regulator (masterGainNode)
                 source.connect(gainNodes[index]);
-                gainNodes[index].connect(audioCtx.destination);
+                gainNodes[index].connect(masterGainNode);
                 
                 if (offset < buffer.duration) {
                     source.start(0, offset);
@@ -431,4 +490,3 @@
     </script>
 </body>
 </html>
-
