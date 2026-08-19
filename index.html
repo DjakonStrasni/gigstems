@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GigStems - Prototip v1.4.01</title>
+    <title>GigStems - Prototip v1.4.021</title>
     <!-- Poziv eksternog CSS-a radi očuvanja konzistentnosti dizajna -->
     <link rel="stylesheet" href="style.css">
     <!-- Eksterni fajl sa prevodima radi lakšeg uređivanja i lokalizacije -->
@@ -211,11 +211,11 @@
 
     <script>
         // ==========================================================================
-        // GIGSTEMS AUDIO ENGINE & CLOUD SYNCHRONIZATION LOGIC (v1.4.0)
+        // GIGSTEMS AUDIO ENGINE & CLOUD SYNCHRONIZATION LOGIC (v1.4.02)
         // ==========================================================================
 
         // #NOVO v1.4.0 - Supabase konekcioni podaci uneti direktno na tvoj zahtev
-        const SUPABASE_URL = "https://yqmxwgikcqibbkpqstux.supabaseClient.co";
+        const SUPABASE_URL = "https://yqmxwgikcqibbkpqstux.supabase.co";
         const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlxbXh3Z2lrY3FpYmJrcHFzdHV4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxNjEwNDksImV4cCI6MjEwMjczNzA0OX0.TVedwos2OOmvggCK-zyevtV6S2Vfdax9e9ygHhKr5nA";
 
         // Inicijalizacija Supabase Klijenta
@@ -261,10 +261,144 @@
         const appContainer = document.getElementById('appContainer');
 
         // ==========================================================================
+        // POMOĆNE METODE ZA PREVOD I STATUS (v1.4.02)
+        // ==========================================================================
+
+        function updateStatusText(key, param = null) {
+            if (!i18n[currentLang] || !i18n[currentLang][key]) return;
+            let text = i18n[currentLang][key];
+            if (param !== null) {
+                text = text.replace("{count}", param);
+            }
+            statusLabel.innerText = text;
+        }
+
+        function updatePlayBtnUI() {
+            if (!playBtn) return;
+            if (isPlaying) {
+                playBtn.innerHTML = `<span>⏸ ${i18n[currentLang].pauseBtn}</span>`;
+            } else {
+                playBtn.innerHTML = `<span>▶ ${i18n[currentLang].playBtn}</span>`;
+            }
+        }
+
+        function setLanguage(lang) {
+            currentLang = lang;
+            localStorage.setItem('gigstems_lang', lang);
+
+            // Ažuriramo aktivne klase na tasterima za jezik
+            const btnSr = document.getElementById('lang-sr');
+            const btnEn = document.getElementById('lang-en');
+            if (btnSr) btnSr.classList.toggle('active', lang === 'sr');
+            if (btnEn) btnEn.classList.toggle('active', lang === 'en');
+
+            // Prevodimo statičke tekstove
+            if (document.getElementById('subtitleText')) {
+                document.getElementById('subtitleText').innerText = i18n[lang].subtitle;
+            }
+            if (stopBtn) {
+                const stopSpan = stopBtn.querySelector('span');
+                if (stopSpan) stopSpan.innerText = i18n[lang].stopBtn;
+            }
+            if (document.getElementById('masterMuteBtn')) {
+                document.getElementById('masterMuteBtn').innerText = i18n[lang].masterMuteBtn;
+            }
+            if (document.getElementById('masterVolLabel')) {
+                document.getElementById('masterVolLabel').innerText = i18n[lang].masterVolLabel;
+            }
+
+            // Prevod pretrage i repertoara
+            if (document.getElementById('searchInput')) {
+                document.getElementById('searchInput').placeholder = i18n[lang].searchPlaceholder;
+            }
+            if (document.getElementById('songsTitle')) {
+                document.getElementById('songsTitle').innerText = i18n[lang].songsTitle;
+            }
+            
+            // Prijava i Registracija prevodi
+            if (document.getElementById('authEmailLabel')) {
+                document.getElementById('authEmailLabel').innerText = i18n[lang].authEmail;
+            }
+            if (document.getElementById('authPasswordLabel')) {
+                document.getElementById('authPasswordLabel').innerText = i18n[lang].authPassword;
+            }
+            if (document.getElementById('authDisplayNameLabel')) {
+                document.getElementById('authDisplayNameLabel').innerText = i18n[lang].authDisplayName;
+            }
+            if (document.getElementById('currentUserLabel')) {
+                document.getElementById('currentUserLabel').innerText = i18n[lang].authWelcome.replace('{name}', '').trim() + ":";
+            }
+            if (document.getElementById('logoutBtn')) {
+                document.getElementById('logoutBtn').innerText = i18n[lang].authLogout;
+            }
+            
+            if (document.getElementById('navBandsBtn')) {
+                document.getElementById('navBandsBtn').innerText = i18n[lang].navBands;
+            }
+            if (document.getElementById('navRepertoireBtn')) {
+                document.getElementById('navRepertoireBtn').innerText = i18n[lang].navRepertoire;
+            }
+            
+            if (document.getElementById('joinCodeTitle')) {
+                document.getElementById('joinCodeTitle').innerText = i18n[lang].joinCodeBtn;
+            }
+            if (document.getElementById('joinCodeLabel')) {
+                document.getElementById('joinCodeLabel').innerText = i18n[lang].joinCodeLabel;
+            }
+            if (document.getElementById('joinCodeInput')) {
+                document.getElementById('joinCodeInput').placeholder = i18n[lang].joinCodePlaceholder;
+            }
+            
+            if (document.getElementById('addSectionTitle')) {
+                document.getElementById('addSectionTitle').innerText = i18n[lang].addSectionTitle;
+            }
+            if (document.getElementById('bandNameLabel')) {
+                document.getElementById('bandNameLabel').innerText = i18n[lang].bandNameLabel;
+            }
+            if (document.getElementById('bandUrlLabel')) {
+                document.getElementById('bandUrlLabel').innerText = i18n[lang].bandUrlLabel;
+            }
+            if (document.getElementById('connectBtn')) {
+                document.getElementById('connectBtn').innerText = i18n[lang].connectBtn;
+            }
+
+            // Osvežavamo i auth naslove i labele
+            const title = document.getElementById('authTitle');
+            const submitBtn = document.getElementById('authSubmitBtn');
+            const switchLink = document.getElementById('authSwitchLink');
+            if (title && submitBtn && switchLink) {
+                if (isRegisterMode) {
+                    title.innerText = i18n[lang].authTitleRegister;
+                    submitBtn.innerText = i18n[lang].authBtnRegister;
+                    switchLink.innerText = i18n[lang].authSwitchToLogin;
+                } else {
+                    title.innerText = i18n[lang].authTitleLogin;
+                    submitBtn.innerText = i18n[lang].authBtnLogin;
+                    switchLink.innerText = i18n[lang].authSwitchToRegister;
+                }
+            }
+
+            updatePlayBtnUI();
+
+            if (audioBuffers.length === 0) {
+                updateStatusText('statusInit');
+            } else {
+                updateStatusText('statusReady', audioBuffers.length);
+            }
+        }
+
+
+        // ==========================================================================
         // 1. AUTENTIFIKACIJA (Supabase Auth & Profiles)
         // ==========================================================================
 
-        // Slušač promena stanja sesije (Automatsko logovanje pri osvežavanju)
+        
+        // Automatska inicijalizacija jezika pri učitavanju
+        window.onload = () => {
+            setLanguage(currentLang);
+        };
+
+// Slušač promena stanja sesije (Automatsko logovanje pri osvežavanju)
         supabaseClient.auth.onAuthStateChange((event, session) => {
             if (session) {
                 authContainer.style.display = "none";
