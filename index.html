@@ -3,27 +3,35 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GigStems - Prototip v1.0.0</title>
+    <title>GigStems - Prototip v1.1.0</title>
     <!-- Poziv eksternog CSS-a radi očuvanja konzistentnosti dizajna -->
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
     <h1>GigStems</h1>
-    <p class="subtitle">v1.0.0 • Prototip sinhronizacije</p>
+    <p class="subtitle">v1.1.0 • Lokalno učitavanje foldera</p>
 
     <!-- Kontrolna Tabla -->
     <div class="controls-master">
         <div class="buttons-row">
-            <button id="playBtn" class="btn-play" onclick="togglePlay()" disabled>
-                <span>▶ Pusti Test</span>
-            </button>
+            <!-- #NOVO v1.1.0 - Dugme za dinamičko učitavanje celog lokalnog foldera sa pesmom -->
+            <label class="file-label" style="background: #334155; color: #f8fafc; padding: 12px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; text-align: center; width: 60%; box-sizing: border-box; display: inline-block;">
+                📁 Učitaj folder
+                <input type="file" id="folderInput" webkitdirectory directory multiple style="display: none;">
+            </label>
             <button id="stopBtn" class="btn-stop" onclick="stopAudio()" disabled>
                 <span>◼ Zaustavi</span>
             </button>
         </div>
 
-        <div class="seekbar-container">
+        <div class="buttons-row" style="margin-top: 10px;">
+            <button id="playBtn" class="btn-play" onclick="togglePlay()" disabled style="width: 100%;">
+                <span>▶ Pusti trake</span>
+            </button>
+        </div>
+
+        <div class="seekbar-container" style="margin-top: 12px;">
             <input type="range" id="seekBar" class="seekbar" min="0" max="100" value="0" oninput="onSeek(this.value)">
         </div>
 
@@ -33,8 +41,8 @@
         </div>
     </div>
 
-    <!-- Status Učitavanja -->
-    <div id="statusLabel" class="status-box">Sintetizujem test trake u memoriji...</div>
+    <!-- Status Učitavanja i Sinhronizacije -->
+    <div id="statusLabel" class="status-box">Izaberi lokalni folder sa stemovima pesme da započneš...</div>
 
     <!-- Mikseta -->
     <div id="mixerContainer" class="mixer"></div>
@@ -45,104 +53,96 @@
         let audioBuffers = [];
         let sourceNodes = [];
         let gainNodes = [];
+        let trackNames = [];
         let isPlaying = false;
         let startTime = 0;
         let pauseOffset = 0;
-        let totalDuration = 30; // Definišemo trajanje od 30 sekundi za naš sintetizovani test
+        let totalDuration = 0;
         let timerInterval;
 
-        // Nazivi test kanala koje ćemo programski generisati
-        const testTracks = [
-            { name: "Klik/Bubanj (Metronome)" },
-            { name: "Bas/Ton (Synth Bass)" },
-            { name: "Melodija (Synth Scale)" }
-        ];
+        const folderInput = document.getElementById('folderInput');
+        const playBtn = document.getElementById('playBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const statusLabel = document.getElementById('statusLabel');
 
-        // Automatsko pokretanje generisanja čim se stranica otvori
-        window.onload = () => {
-            initAudioAndGenerate();
-        };
+        // #NOVO v1.1.0 - Osluškivač za izbor lokalnog foldera
+        folderInput.addEventListener('change', async (e) => {
+            // Filtriramo samo audio fajlove (mp3, wav, ogg, m4a...)
+            const files = Array.from(e.target.files).filter(file => {
+                return file.type.startsWith('audio/') || 
+                       file.name.endsWith('.mp3') || 
+                       file.name.endsWith('.wav') || 
+                       file.name.endsWith('.m4a');
+            });
+            
+            if (files.length === 0) {
+                alert("Nema ispravnih audio fajlova u izabranom folderu!");
+                return;
+            }
 
-        // #NOVO v1.0.0 - Programsko generisanje audio signala direktno u RAM memoriju.
-        // Na ovaj način potpuno izbegavamo CORS greške i mrežne probleme na telefonima i računarima.
-        async function initAudioAndGenerate() {
-            try {
+            // Zaustavljamo prethodni audio ako je svirao i čistimo stare podatke
+            stopAudio();
+            statusLabel.innerText = "Učitavam i sinhronizujem trake u memoriju (RAM)...";
+            playBtn.disabled = true;
+            stopBtn.disabled = true;
+
+            if (!audioCtx) {
                 audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                const statusLabel = document.getElementById('statusLabel');
-                const sampleRate = audioCtx.sampleRate;
-                const bufferSize = sampleRate * totalDuration;
+            }
 
-                // 1. Generisanje trake: Klik/Bubanj (Kratak taster na svakih 0.5s - 120 BPM)
-                statusLabel.innerText = "Sintetizujem kanal: Klik/Bubanj...";
-                const clickBuffer = audioCtx.createBuffer(1, bufferSize, sampleRate);
-                const clickData = clickBuffer.getChannelData(0);
-                const clickInterval = 0.5; // 0.5 sekundi (120 BPM)
-                for (let t = 0; t < totalDuration; t += clickInterval) {
-                    const startSample = Math.floor(t * sampleRate);
-                    const clickLength = Math.floor(0.04 * sampleRate); // 40ms klik
-                    for (let i = 0; i < clickLength; i++) {
-                        if (startSample + i < bufferSize) {
-                            // Sinusni talas od 800Hz koji brzo slabi (decay)
-                            clickData[startSample + i] = Math.sin(2 * Math.PI * 800 * (i / sampleRate)) * Math.exp(-i / (0.008 * sampleRate));
-                        }
+            audioBuffers = [];
+            trackNames = [];
+            gainNodes = [];
+            totalDuration = 0;
+
+            // #NOVO v1.1.0 - Sortiranje fajlova po imenu kako bismo uvek imali isti raspored kanala
+            files.sort((a, b) => a.name.localeCompare(b.name));
+
+            try {
+                // Prolazimo kroz sve fajlove i dekodiramo ih u RAM memoriju
+                for (let i = 0; i < files.length; i++) {
+                    const file = files[i];
+                    statusLabel.innerText = `Dekodiram kanal [${i + 1}/${files.length}]: ${file.name}...`;
+                    
+                    const arrayBuffer = await file.arrayBuffer();
+                    const decodedData = await audioCtx.decodeAudioData(arrayBuffer);
+                    
+                    audioBuffers.push(decodedData);
+                    
+                    // #NOVO v1.1.0 - Funkcija za prečišćavanje naziva traka (sklanja ekstenzije i početne brojeve npr. 01_bass -> bass)
+                    let cleanName = file.name.replace(/\.[^/.]+$/, ""); // uklanja ekstenziju (.mp3, .wav...)
+                    cleanName = cleanName.replace(/^\d+[\s_.-]*/, ""); // uklanja brojeve i znakove sa početka (01_, 02-, itd.)
+                    // Prvo slovo veliko radi lepše estetike miksete
+                    cleanName = cleanName.charAt(0).toUpperCase() + cleanName.slice(1);
+                    
+                    trackNames.push(cleanName);
+
+                    // Određujemo najdužu traku kao ukupnu dužinu cele pesme
+                    if (decodedData.duration > totalDuration) {
+                        totalDuration = decodedData.duration;
                     }
                 }
-                audioBuffers.push(clickBuffer);
 
-                // 2. Generisanje trake: Bas/Ton (Niski pulsirajući ton od 55Hz na svaku sekundu)
-                statusLabel.innerText = "Sintetizujem kanal: Bas/Ton...";
-                const bassBuffer = audioCtx.createBuffer(1, bufferSize, sampleRate);
-                const bassData = bassBuffer.getChannelData(0);
-                for (let t = 0; t < totalDuration; t += 1.0) {
-                    const startSample = Math.floor(t * sampleRate);
-                    const noteLength = Math.floor(0.8 * sampleRate); // 800ms trajanje note
-                    for (let i = 0; i < noteLength; i++) {
-                        if (startSample + i < bufferSize) {
-                            // Sinusni talas na 55Hz (A1) sa linearnim slabljenjem jačine
-                            bassData[startSample + i] = Math.sin(2 * Math.PI * 55 * (i / sampleRate)) * 0.6 * (1 - i / noteLength);
-                        }
-                    }
-                }
-                audioBuffers.push(bassBuffer);
-
-                // 3. Generisanje trake: Melodija (Kratka skala koja menja note na svaku sekundu)
-                statusLabel.innerText = "Sintetizujem kanal: Melodija...";
-                const melodyBuffer = audioCtx.createBuffer(1, bufferSize, sampleRate);
-                const melodyData = melodyBuffer.getChannelData(0);
-                const notes = [261.63, 329.63, 392.00, 523.25]; // C4, E4, G4, C5 note
-                for (let t = 0; t < totalDuration; t += 1.0) {
-                    const noteIdx = Math.floor(t) % notes.length;
-                    const freq = notes[noteIdx];
-                    const startSample = Math.floor(t * sampleRate);
-                    const noteLength = Math.floor(0.6 * sampleRate);
-                    for (let i = 0; i < noteLength; i++) {
-                        if (startSample + i < bufferSize) {
-                            // Sinusni talas izabrane frekvencije sa slabljenjem jačine
-                            melodyData[startSample + i] = Math.sin(2 * Math.PI * freq * (i / sampleRate)) * 0.3 * (1 - i / noteLength);
-                        }
-                    }
-                }
-                audioBuffers.push(melodyBuffer);
-
-                // Prikaz da je sve spremno
-                statusLabel.innerText = "Sve lokalne test trake su uspešno generisane u RAM-u!";
+                statusLabel.innerText = `Učitano je ${files.length} traka. Spremno za svirku!`;
                 document.getElementById('totalTime').innerText = formatTime(totalDuration);
                 
+                // Dinamički gradimo miksetu sa tačnim brojem učitanih traka
                 buildMixer();
-                document.getElementById('playBtn').disabled = false;
-                document.getElementById('stopBtn').disabled = false;
+                
+                playBtn.disabled = false;
+                stopBtn.disabled = false;
             } catch (err) {
-                document.getElementById('statusLabel').innerText = "Greška pri inicijalizaciji audio generatora.";
-                console.error("Greška tokom generisanja zvuka:", err);
+                statusLabel.innerText = "Greška pri učitavanju i dekodiranju fajlova.";
+                console.error("Greška u Audio Engine-u:", err);
             }
-        }
+        });
 
-        // Dinamičko kreiranje miksete na ekranu
+        // Dinamičko kreiranje miksete na ekranu na osnovu učitanih traka
         function buildMixer() {
             const container = document.getElementById('mixerContainer');
             container.innerHTML = '';
 
-            testTracks.forEach((track, index) => {
+            trackNames.forEach((name, index) => {
                 // Kreiramo GainNode (regulator jačine) za svaki kanal posebno
                 const gainNode = audioCtx.createGain();
                 gainNode.gain.value = 0.8; // Podrazumevana jačina na 80%
@@ -151,7 +151,7 @@
                 const strip = document.createElement('div');
                 strip.className = 'track-strip';
                 strip.innerHTML = `
-                    <div class="track-name">${track.name}</div>
+                    <div class="track-name" title="${name}">${name}</div>
                     <div class="volume-slider-container">
                         <input type="range" class="volume-slider" min="0" max="1" step="0.01" value="0.8" oninput="setVolume(${index}, this.value)">
                     </div>
@@ -170,7 +170,7 @@
             }
         }
 
-        // Mute funkcionalnost bez zaustavljanja plejera
+        // Mute funkcionalnost bez ispadanja iz sinhronizacije
         function toggleMute(index) {
             const btn = document.getElementById(`muteBtn-${index}`);
             const slider = btn.parentNode.querySelector('.volume-slider');
@@ -212,14 +212,12 @@
                 audioCtx.resume();
             }
 
-            const playBtn = document.getElementById('playBtn');
-
             if (isPlaying) {
                 // Pause stanje
                 pauseOffset += audioCtx.currentTime - startTime;
                 stopSourceNodes();
                 isPlaying = false;
-                playBtn.innerHTML = "<span>▶ Pusti Test</span>";
+                playBtn.innerHTML = "<span>▶ Pusti trake</span>";
                 clearInterval(timerInterval);
             } else {
                 // Play stanje
@@ -266,7 +264,7 @@
             stopSourceNodes();
             isPlaying = false;
             pauseOffset = 0;
-            document.getElementById('playBtn').innerHTML = "<span>▶ Pusti Test</span>";
+            playBtn.innerHTML = "<span>▶ Pusti trake</span>";
             document.getElementById('currentTime').innerText = "00:00";
             document.getElementById('seekBar').value = 0;
             clearInterval(timerInterval);
