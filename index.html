@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GigStems - Prototip v1.0.0</title>
-    <!-- #NOVO v1.0.0 - Eksterni CSS poziv radi očuvanja konzistentnosti dizajna -->
+    <!-- Poziv eksternog CSS-a radi očuvanja konzistentnosti dizajna -->
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -34,7 +34,7 @@
     </div>
 
     <!-- Status Učitavanja -->
-    <div id="statusLabel" class="status-box">Učitavam test trake sa weba...</div>
+    <div id="statusLabel" class="status-box">Sintetizujem test trake u memoriji...</div>
 
     <!-- Mikseta -->
     <div id="mixerContainer" class="mixer"></div>
@@ -48,55 +48,92 @@
         let isPlaying = false;
         let startTime = 0;
         let pauseOffset = 0;
-        let totalDuration = 0;
+        let totalDuration = 30; // Definišemo trajanje od 30 sekundi za naš sintetizovani test
         let timerInterval;
 
-        // #NOVO v1.0.0 - Zamenjene putanje sa Wikimedia Commons linkovima koji garantuju aktivan CORS i uspešno učitavanje u pretraživaču
+        // Nazivi test kanala koje ćemo programski generisati
         const testTracks = [
-            { name: "Klik/Bubanj (Metronome)", url: "https://upload.wikimedia.org/wikipedia/commons/4/41/200_beats_per_minute_metronome.ogg" },
-            { name: "Bas/Ton (Synth Bass)", url: "https://upload.wikimedia.org/wikipedia/commons/0/03/Sine_wave_440Hz.ogg" },
-            { name: "Melodija (Acoustic Guitar)", url: "https://upload.wikimedia.org/wikipedia/commons/2/2a/C_major_scale_on_acoustic_guitar.ogg" }
+            { name: "Klik/Bubanj (Metronome)" },
+            { name: "Bas/Ton (Synth Bass)" },
+            { name: "Melodija (Synth Scale)" }
         ];
 
-        // Automatsko pokretanje učitavanja čim se stranica otvori
+        // Automatsko pokretanje generisanja čim se stranica otvori
         window.onload = () => {
-            initAudioAndLoad();
+            initAudioAndGenerate();
         };
 
-        // Inicijalizacija audio konteksta i asinhrono preuzimanje fajlova u RAM
-        async function initAudioAndLoad() {
+        // #NOVO v1.0.0 - Programsko generisanje audio signala direktno u RAM memoriju.
+        // Na ovaj način potpuno izbegavamo CORS greške i mrežne probleme na telefonima i računarima.
+        async function initAudioAndGenerate() {
             try {
                 audioCtx = new (window.AudioContext || window.webkitAudioContext)();
                 const statusLabel = document.getElementById('statusLabel');
+                const sampleRate = audioCtx.sampleRate;
+                const bufferSize = sampleRate * totalDuration;
 
-                for (let i = 0; i < testTracks.length; i++) {
-                    statusLabel.innerText = `Učitavam kanal: ${testTracks[i].name}...`;
-                    const response = await fetch(testTracks[i].url);
-                    
-                    // #NOVO v1.0.0 - Dodata provera statusa odgovora kako bismo znali ako neki fajl padne tokom fetch-a
-                    if (!response.ok) {
-                        throw new Error(`HTTP greška! status: ${response.status} na fajlu ${testTracks[i].name}`);
-                    }
-                    
-                    const arrayBuffer = await response.arrayBuffer();
-                    const decodedData = await audioCtx.decodeAudioData(arrayBuffer);
-                    
-                    audioBuffers.push(decodedData);
-                    // Određujemo najdužu traku kao ukupnu dužinu pesme
-                    if (decodedData.duration > totalDuration) {
-                        totalDuration = decodedData.duration;
+                // 1. Generisanje trake: Klik/Bubanj (Kratak taster na svakih 0.5s - 120 BPM)
+                statusLabel.innerText = "Sintetizujem kanal: Klik/Bubanj...";
+                const clickBuffer = audioCtx.createBuffer(1, bufferSize, sampleRate);
+                const clickData = clickBuffer.getChannelData(0);
+                const clickInterval = 0.5; // 0.5 sekundi (120 BPM)
+                for (let t = 0; t < totalDuration; t += clickInterval) {
+                    const startSample = Math.floor(t * sampleRate);
+                    const clickLength = Math.floor(0.04 * sampleRate); // 40ms klik
+                    for (let i = 0; i < clickLength; i++) {
+                        if (startSample + i < bufferSize) {
+                            // Sinusni talas od 800Hz koji brzo slabi (decay)
+                            clickData[startSample + i] = Math.sin(2 * Math.PI * 800 * (i / sampleRate)) * Math.exp(-i / (0.008 * sampleRate));
+                        }
                     }
                 }
+                audioBuffers.push(clickBuffer);
 
-                statusLabel.innerText = "Sve trake su spremne! Klikni Pusti Test.";
+                // 2. Generisanje trake: Bas/Ton (Niski pulsirajući ton od 55Hz na svaku sekundu)
+                statusLabel.innerText = "Sintetizujem kanal: Bas/Ton...";
+                const bassBuffer = audioCtx.createBuffer(1, bufferSize, sampleRate);
+                const bassData = bassBuffer.getChannelData(0);
+                for (let t = 0; t < totalDuration; t += 1.0) {
+                    const startSample = Math.floor(t * sampleRate);
+                    const noteLength = Math.floor(0.8 * sampleRate); // 800ms trajanje note
+                    for (let i = 0; i < noteLength; i++) {
+                        if (startSample + i < bufferSize) {
+                            // Sinusni talas na 55Hz (A1) sa linearnim slabljenjem jačine
+                            bassData[startSample + i] = Math.sin(2 * Math.PI * 55 * (i / sampleRate)) * 0.6 * (1 - i / noteLength);
+                        }
+                    }
+                }
+                audioBuffers.push(bassBuffer);
+
+                // 3. Generisanje trake: Melodija (Kratka skala koja menja note na svaku sekundu)
+                statusLabel.innerText = "Sintetizujem kanal: Melodija...";
+                const melodyBuffer = audioCtx.createBuffer(1, bufferSize, sampleRate);
+                const melodyData = melodyBuffer.getChannelData(0);
+                const notes = [261.63, 329.63, 392.00, 523.25]; // C4, E4, G4, C5 note
+                for (let t = 0; t < totalDuration; t += 1.0) {
+                    const noteIdx = Math.floor(t) % notes.length;
+                    const freq = notes[noteIdx];
+                    const startSample = Math.floor(t * sampleRate);
+                    const noteLength = Math.floor(0.6 * sampleRate);
+                    for (let i = 0; i < noteLength; i++) {
+                        if (startSample + i < bufferSize) {
+                            // Sinusni talas izabrane frekvencije sa slabljenjem jačine
+                            melodyData[startSample + i] = Math.sin(2 * Math.PI * freq * (i / sampleRate)) * 0.3 * (1 - i / noteLength);
+                        }
+                    }
+                }
+                audioBuffers.push(melodyBuffer);
+
+                // Prikaz da je sve spremno
+                statusLabel.innerText = "Sve lokalne test trake su uspešno generisane u RAM-u!";
                 document.getElementById('totalTime').innerText = formatTime(totalDuration);
                 
                 buildMixer();
                 document.getElementById('playBtn').disabled = false;
                 document.getElementById('stopBtn').disabled = false;
             } catch (err) {
-                document.getElementById('statusLabel').innerText = "Greška pri učitavanju traka v1. Osveži stranicu.";
-                console.error("Greška tokom učitavanja audio fajlova:", err);
+                document.getElementById('statusLabel').innerText = "Greška pri inicijalizaciji audio generatora.";
+                console.error("Greška tokom generisanja zvuka:", err);
             }
         }
 
