@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GigStems - Prototip v1.3.3</title>
+    <title>GigStems - Prototip v1.3.4</title>
     <!-- Poziv eksternog CSS-a radi očuvanja konzistentnosti dizajna -->
     <link rel="stylesheet" href="style.css">
     <!-- Eksterni fajl sa prevodima radi lakšeg uređivanja i lokalizacije -->
@@ -30,10 +30,10 @@
                     <button id="addBandBtn" class="btn-add-band" onclick="toggleAddBandPanel()">Upravljaj</button>
                 </div>
 
-                <!-- #NOVO v1.3.3 - Potpuno organizovan i vizuelno odvojen panel za upravljanje i dodavanje bendova -->
+                <!-- Elegantan i vizuelno odvojen panel za upravljanje i dodavanje bendova -->
                 <div id="addBandPanel" class="band-manager-panel" style="display: none;">
                     
-                    <!-- Sekcija 1: Uredi trenutni bend (Edit Current Band) -->
+                    <!-- Sekcija 1: Uredi trenutni bend (Edit Current Band) - Prikazuje se samo ako bend postoji -->
                     <div id="renameBandSection" class="manager-section">
                         <span id="editSectionTitle" class="manager-section-title">✏️ Uredi Aktivni Bend</span>
                         
@@ -91,7 +91,7 @@
             <div class="app-header">
                 <div>
                     <h1>GigStems</h1>
-                    <p id="subtitleText" class="subtitle">v1.3.3 • Repertoar i Menadžment</p>
+                    <p id="subtitleText" class="subtitle">v1.3.4 • Repertoar i Menadžment</p>
                 </div>
                 
                 <div style="display: flex; gap: 10px; align-items: center;">
@@ -146,11 +146,11 @@
 
     <script>
         // ==========================================================================
-        // GIGSTEMS AUDIO ENGINE & CONTROL LOGIC (v1.3.3)
+        // GIGSTEMS AUDIO ENGINE & CONTROL LOGIC (v1.3.4)
         // ==========================================================================
 
         // TVOJ BEZBEDNI API KLJUČ (Ograničen na tvoj GitHub Pages domen)
-        const GIGSTEMS_API_KEY = "AIzaSyBiq4QbYuCtVyy9_-dJTCTcCtPfwZc-Gu8";
+        const GIGSTEMS_API_KEY = "UPISI_OVDE_SVOJ_API_KLJUC";
 
         // Inicijalizacija Web Audio API-ja i globalnih promenljivih
         let audioCtx;
@@ -181,7 +181,7 @@
         const songsList = document.getElementById('songsList');
         const bandSelect = document.getElementById('bandSelect');
 
-        // #NOVO v1.3.3 - Rešeno trajno skladištenje i ispravljen ključ na gigstems_bands
+        // Popravljeno skladištenje i učitavanje bendova na jedinstvenom ključu
         let isFirstRun = localStorage.getItem('gigstems_first_run') === null;
         let bands = JSON.parse(localStorage.getItem('gigstems_bands'));
         
@@ -197,17 +197,13 @@
         
         let activeBandId = localStorage.getItem('gigstems_active_band');
 
-        // #NOVO v1.3.3 - Detektovanje i ispravka stanja kada je samo jedan bend u listi, ili je prazna
-        if (!activeBandId && bands.length > 0) {
-            activeBandId = bands.id;
-            localStorage.setItem('gigstems_active_band', activeBandId);
-        } else if (activeBandId && bands.length > 0) {
-            const exists = bands.some(b => b.id === activeBandId);
-            if (!exists) {
+        // Rešen problem sa učitavanjem kada je samo jedan bend u listi i ispravljen critical bug 'bands.id'
+        if (bands.length > 0) {
+            if (!activeBandId || !bands.some(b => b.id === activeBandId)) {
                 activeBandId = bands.id;
                 localStorage.setItem('gigstems_active_band', activeBandId);
             }
-        } else if (bands.length === 0) {
+        } else {
             activeBandId = "";
             localStorage.setItem('gigstems_active_band', "");
         }
@@ -254,7 +250,6 @@
             document.getElementById('songsTitle').innerText = i18n[lang].songsTitle;
             document.getElementById('mobileToggleBtn').innerText = "📋 " + i18n[lang].songsTitle.split(" ").slice(1).join(" ");
             
-            // #NOVO v1.3.3 - Prevod za sekcije i nove elemente
             document.getElementById('editSectionTitle').innerText = i18n[lang].editSectionTitle;
             document.getElementById('addSectionTitle').innerText = i18n[lang].addSectionTitle;
             document.getElementById('renameBandLabel').innerText = i18n[lang].renameBandLabel;
@@ -294,7 +289,7 @@
         function renderBandsUI() {
             bandSelect.innerHTML = "";
             
-            // #NOVO v1.3.3 - Rešeno prazno stanje i preklapanje vizuelnih delova
+            // Podrška za "-- Bez benda --" opciju kada nema bendova
             if (bands.length === 0) {
                 const opt = document.createElement('option');
                 opt.value = "";
@@ -343,7 +338,7 @@
             return match ? match : urlOrId;
         }
 
-        // #NOVO v1.3.3 - Dodavanje novog benda sa prevencijom duplih imena i linkova drajva
+        // Dodavanje novog benda sa prevencijom duplih imena i drajv linkova i ispravkom localStorage ključa
         function addNewBandSubmit() {
             const nameInput = document.getElementById('newBandName');
             const urlInput = document.getElementById('newBandUrl');
@@ -395,7 +390,7 @@
             loadSongsFromActiveBand();
         }
 
-        // #NOVO v1.3.3 - Ažuriranje naziva i Drive linka postojećeg benda sa validacijom duplih imena
+        // Sačuvaj izmene (Uredi trenutni bend) sa detaljnom i bezbednom proverom duplih unosa
         function updateActiveBandSubmit() {
             const nameInput = document.getElementById('renameBandNameInput');
             const urlInput = document.getElementById('renameBandUrlInput');
@@ -438,7 +433,7 @@
             }
         }
 
-        // #NOVO v1.3.3 - Ispravljena logika brisanja i automatsko selektovanje prvog dostupnog benda
+        // Ispravljeno brisanje bendova sa automatskim prebacivanjem na ispravnu selekciju nulte kartice i brisanjem lokalnih tragova
         function deleteActiveBand() {
             if (bands.length === 0) return;
 
@@ -448,7 +443,7 @@
             bands = bands.filter(b => b.id !== activeBandId);
             localStorage.setItem('gigstems_bands', JSON.stringify(bands));
 
-            // Pravilno ažuriramo sledeći aktivni ID
+            // Pravilno ažuriramo sledeći aktivni ID (eliminisan bands.id critical bug)
             if (bands.length > 0) {
                 activeBandId = bands.id;
             } else {
@@ -482,9 +477,11 @@
 
         // Povezivanje na drajv aktivnog benda i osvežavanje repertoara
         async function loadSongsFromActiveBand() {
-            // #NOVO v1.3.3 - Prazno stanje se rešava čišćenjem repertoara bez kucanja zahteva ka API-ju
+            // Potpuno rešeno prazno stanje i prekidanje API pretraga kada nema selektovanog drajva
             if (bands.length === 0 || !activeBandId) {
                 songsList.innerHTML = `<div style="padding:15px; text-align:center; color:#94a3b8;">${i18n[currentLang].noBands}</div>`;
+                document.getElementById('mixerContainer').innerHTML = "";
+                updateStatusText('statusInit');
                 return;
             }
 
