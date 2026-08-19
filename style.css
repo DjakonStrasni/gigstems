@@ -1,6 +1,6 @@
 /* ==========================================================================
    GIGSTEMS GLOBAL STYLES (style.css)
-   v1.0.0 • Konzistentan dizajn prilagođen mobilnim i desktop uređajima
+   v1.2.0 • Konzistentan dizajn sa jezičkim selektorom i miksetom
    ========================================================================== */
 
 /* Osnovni stilovi za mračnu temu */
@@ -26,9 +26,37 @@ h1 {
 
 p.subtitle {
     color: #94a3b8;
-    margin: 0 0 20px 0;
+    margin: 0 0 15px 0;
     font-size: 0.9em;
     text-align: center;
+}
+
+/* #NOVO v1.2.0 - Jezički selektor na vrhu */
+.lang-container {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
+}
+
+.btn-lang {
+    background: #334155;
+    color: #cbd5e1;
+    padding: 6px 14px;
+    font-size: 0.8em;
+    border-radius: 20px;
+    font-weight: bold;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s;
+}
+
+.btn-lang:active {
+    transform: scale(0.95);
+}
+
+.btn-lang.active {
+    background: #10b981;
+    color: #022c22;
 }
 
 /* Kontrolna tabla plejera */
@@ -183,6 +211,10 @@ button:disabled {
     font-size: 0.75em;
     padding: 6px 0;
     border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    font-weight: bold;
+    text-align: center;
 }
 
 .btn-mute.active {
@@ -196,6 +228,10 @@ button:disabled {
     font-size: 0.75em;
     padding: 6px 0;
     border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    font-weight: bold;
+    text-align: center;
 }
 
 .btn-solo.active {
