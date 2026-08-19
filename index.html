@@ -1,65 +1,61 @@
-<!DOCTYPE html><!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="sr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GigStems v1.4.05</title>
-    <!-- Poziv eksternog CSS-a radi očuvanja konzistentnosti dizajna -->
+    <title>GigStems v1.4.06</title>
+    <!-- Poziv eksternog CSS-a -->
     <link rel="stylesheet" href="style.css">
-    <!-- Eksterni fajl sa prevodima radi lakšeg uređivanja i lokalizacije -->
+    <!-- Eksterni fajl sa prevodima -->
     <script src="translations.js"></script>
     <!-- Učitavanje zvaničnog Supabase SDK sa CDN mreže -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Glavni JavaScript kod aplikacije -->
+    <script src="app.js" defer></script>
 </head>
 <body>
 
-    <!-- Zatamnjenje ekrana za mobilni kada je otvoren klizni meni sa pesmama ili navigacijom -->
-    <div id="sidebarOverlay" class="sidebar-overlay" onclick="closeAllMobilePanels()"></div>
-
     <!-- EKRAN ZA AUTENTIFIKACIJU (Prikazuje se kada korisnik nije ulogovan) -->
     <div id="authContainer" class="auth-wrapper" style="display: none;">
-        <!-- #NOVO v1.4.05 - Dvojezičnost na ekranu za prijavu i prebacivanje pre same registracije -->
-        <div class="auth-lang-selector" style="display: flex; gap: 8px; justify-content: flex-end; margin-bottom: 20px;">
-            <button id="auth-lang-sr" class="btn-lang" onclick="setLanguage('sr')">SR</button>
-            <button id="auth-lang-en" class="btn-lang" onclick="setLanguage('en')">EN</button>
+        <!-- Dvojezični switch na vrhu -->
+        <div class="lang-switch-container">
+            <button id="btnLangSR" class="btn-lang active" onclick="setLanguage('sr')">SR</button>
+            <button id="btnLangEN" class="btn-lang" onclick="setLanguage('en')">EN</button>
         </div>
 
-        <!-- Glavna login/register forma -->
-        <div id="authMainForm">
-            <h2 id="authTitle" class="auth-title">🔑 Prijavljivanje</h2>
-            
-            <div id="authDisplayNameGroup" class="input-group" style="display: none; margin-bottom: 12px;">
+        <h2 id="authTitle" class="auth-title">🔑 Prijavljivanje</h2>
+        
+        <!-- Standardna registraciona i login polja -->
+        <div id="authFormFields">
+            <div id="authDisplayNameGroup" class="input-group" style="display: none;">
                 <label id="authDisplayNameLabel" class="input-label" for="authDisplayNameInput">Tvoje ime (muzičar):</label>
                 <input type="text" id="authDisplayNameInput" class="settings-input" placeholder="Npr. Marko Basista">
             </div>
 
-            <div class="input-group" style="margin-bottom: 12px;">
+            <div class="input-group">
                 <label id="authEmailLabel" class="input-label" for="authEmailInput">Email adresa:</label>
                 <input type="email" id="authEmailInput" class="settings-input" placeholder="ime@gmail.com">
             </div>
 
-            <div class="input-group" style="margin-bottom: 15px;">
+            <div class="input-group" style="margin-bottom: 20px;">
                 <label id="authPasswordLabel" class="input-label" for="authPasswordInput">Lozinka:</label>
                 <input type="password" id="authPasswordInput" class="settings-input" placeholder="Najmanje 6 karaktera">
             </div>
 
             <button id="authSubmitBtn" class="btn-connect" style="width: 100%;" onclick="handleAuthSubmit()">Prijavi se</button>
-            
             <div id="authSwitchLink" class="auth-switch-link" onclick="toggleAuthMode()">Nemate nalog? Registrujte se</div>
         </div>
 
-        <!-- #NOVO v1.4.05 - Ekran za neposrednu verifikaciju e-mail koda (OTP) na istom ekranu -->
-        <div id="authVerificationForm" style="display: none;">
-            <h2 id="verificationTitle" class="auth-title">📩 Potvrdi Email</h2>
-            <p id="verificationText" style="font-size: 0.85em; color: #9ca3af; margin-bottom: 20px; text-align: center; line-height: 1.5;"></p>
-            
+        <!-- NOVO v1.4.06 - Integrisani OTP ekran za potvrdu emaila u istom prozoru -->
+        <div id="otpFormFields" style="display: none;">
+            <p id="otpSubText" class="input-label" style="margin-bottom: 15px; line-height: 1.4; color: var(--text-primary);">
+                📩 Potvrda Email adrese:<br>Poslat vam je 6-cifreni kod na e-mail. Unesite ga ispod da završite registraciju:
+            </p>
             <div class="input-group" style="margin-bottom: 20px;">
-                <label id="verificationCodeLabel" class="input-label" for="verificationCodeInput">Aktivacioni kod:</label>
-                <input type="text" id="verificationCodeInput" class="settings-input" placeholder="Npr. 123456" style="text-align: center; letter-spacing: 4px; font-size: 1.3em; font-family: monospace;">
+                <input type="text" id="otpCodeInput" class="settings-input" placeholder="Npr. 123456" style="text-align: center; letter-spacing: 4px; font-weight: bold; font-size: 1.3em;">
             </div>
-            
-            <button id="verificationSubmitBtn" class="btn-connect" style="width: 100%; margin-bottom: 12px;" onclick="handleVerificationSubmit()">Potvrdi i prijavi se</button>
-            <button id="verificationBackBtn" class="btn-band-action" style="width: 100%; background: transparent; border: 1px solid #374151; color: #9ca3af; font-size: 0.85em;" onclick="cancelVerification()">◀ Nazad na registraciju</button>
+            <button id="otpVerifyBtn" class="btn-connect" style="width: 100%; margin-bottom: 15px;" onclick="handleOTPVerify()">Potvrdi kod</button>
+            <button id="otpCancelBtn" class="btn-secondary" style="width: 100%;" onclick="cancelOTPMode()">◀ Nazad na prijavu</button>
         </div>
     </div>
 
@@ -72,13 +68,23 @@
         <div id="appSidebar" class="sidebar">
             <div class="sidebar-header">
                 <span class="sidebar-logo">GigStems</span>
-                <p id="subtitleText" class="subtitle">v1.4.05</p>
-                <div class="sidebar-divider"></div>
+                <p id="subtitleText" class="subtitle">v1.4.06</p>
+                <div class="sidebar-divider" style="margin: 10px 0 15px 0;"></div>
+                
+                <!-- Diskretan dvojezični prebacivač i u aplikaciji -->
+                <div class="lang-switch-container" style="justify-content: flex-start; margin-bottom: 0;">
+                    <button id="sidebarLangSR" class="btn-lang" onclick="setLanguage('sr')">SR</button>
+                    <button id="sidebarLangEN" class="btn-lang" onclick="setLanguage('en')">EN</button>
+                </div>
             </div>
 
-            <!-- Lista bendova sa podmenijem (Jedina navigacija) -->
+            <!-- Lista bendova sa podmenijem -->
             <div class="nav-menu">
                 <div id="sidebarBandsHeader" class="sidebar-section-title">🎸 Moji Bendovi</div>
+                
+                <!-- Dugme za brzi dodatak novog benda (Kao na giglist.jpg slici) -->
+                <button id="btnNewBandSidebar" class="btn-sidebar-add" onclick="showNewBandCreation()">➕ Novi bend</button>
+                
                 <div id="sidebarBandsList" class="sidebar-bands-list">
                     <!-- Popunjava se dinamički iz baze -->
                 </div>
@@ -90,8 +96,8 @@
                 
                 <!-- Popup meni koji iskače iznad profila -->
                 <div id="profilePopupMenu" class="profile-popup-menu" style="display: none;">
-                    <button class="popup-item" onclick="openSettingsModal()">⚙️ Podešavanja</button>
-                    <button class="popup-item btn-popup-logout" onclick="handleLogout()">🚪 Odjavi se</button>
+                    <button id="popMenuSettings" class="popup-item" onclick="openSettingsModal()">⚙️ Podešavanja</button>
+                    <button id="popMenuLogout" class="popup-item btn-popup-logout" onclick="handleLogout()">🚪 Odjavi se</button>
                 </div>
 
                 <div class="user-profile-trigger" onclick="toggleProfileMenu(event)">
@@ -105,1640 +111,289 @@
         </div>
 
         <!-- ==========================================================================
-             KOLONA 2: Repertoar / Lista Pesama (Središnji deo)
+             SREDIŠNJA RADNA POVRŠINA (WORKSPACE CANVAS)
              ========================================================================== -->
-        <div id="repertoireColumn" class="repertoire-column" style="display: none;">
-            <!-- Brza pretraga -->
-            <div class="search-container">
-                <input type="text" id="searchInput" class="search-input" placeholder="🔍 Pretraži pesmu..." oninput="filterSongs(this.value)">
-            </div>
-
-            <!-- Naslov i Spisak pesama -->
-            <div class="songs-title-container">
-                <span id="songsTitle" class="songs-title">📋 Spisak Pesama</span>
-            </div>
-            <div id="songsList" class="songs-list">
-                <!-- Popunjava se dinamički iz drajva aktivnog benda -->
-            </div>
-        </div>
-
-        <!-- ==========================================================================
-             KOLONA 3: Glavni Radni Prostor (Središnji list-box, Mikseta)
-             ========================================================================== -->
-        <div class="main-content">
+        <div id="workspace" class="workspace-container">
             
-            <div class="workspace-wrapper">
+            <!-- VIEW A: Centralna Kontrolna Tabla Benda (GigLab / Giglist.no stil) -->
+            <div id="bandDashboard" class="band-dashboard" style="display: flex;">
+                <div class="band-dashboard-header">
+                    <h2 id="bandDashboardMainTitle" style="font-weight: 400; font-size: 1.6em;">🎸 GigLab Dashboard</h2>
+                    <button id="btnNewBandDashboard" class="btn-new-band-large" onclick="showNewBandCreation()">➕ New band</button>
+                </div>
                 
-                <!-- Mobilni Bar sa dugmićima na vrhu -->
-                <div class="app-header">
-                    <div style="display: flex; gap: 10px; align-items: center;">
-                        <!-- Hamburger dugme za poziv Kolone 1 na telefonu -->
-                        <button id="mobileMenuBtn" class="mobile-toggle-btn" onclick="toggleSidebar(true)">☰ Meni</button>
-                        <!-- Dugme za poziv Kolone 2 na telefonu -->
-                        <button id="mobileSongsBtn" class="mobile-toggle-btn" onclick="toggleRepertoire(true)" style="display: none;">📋 Pesme</button>
+                <!-- Glavna vizuelna kartica benda -->
+                <div id="bandCard" class="band-card" style="display: none;">
+                    <!-- Logo leve strane sa upload opcijom -->
+                    <div id="bandLogoBox" class="band-card-logo-box" onclick="triggerLogoUpload()">
+                        <div id="logoLoadingSpinner" style="display:none; color:var(--accent-purple);">⏳</div>
+                        <img id="bandLogoImg" class="band-logo-img" src="" style="display: none;" alt="Band Logo">
+                        <span id="bandLogoPlaceholderIcon" class="band-logo-icon">🖼️</span>
+                        <span id="bandLogoUploadText" class="band-logo-text">Upload logo</span>
+                        <!-- Skriveni fajl input za logo -->
+                        <input type="file" id="bandLogoFileInput" accept="image/*" style="display: none;" onchange="handleLogoUpload(this)">
                     </div>
                     
-                    <div style="text-align: right;">
-                        <span id="activeBandNameLabel" class="user-name" style="font-size: 1.1em; font-weight: 300;"></span>
-                    </div>
-                </div>
-
-                <!-- ==========================================================================
-                     TAB 1: Moji Bendovi (Bands Grid) - Prikazuje se kada nema aktivne pesme
-                     ========================================================================== -->
-                <div id="tabBands" class="tab-content">
-                    
-                    <!-- Lista kartica bendova -->
-                    <div id="bandsGrid" class="bands-grid">
-                        <!-- Popunjava se dinamički iz baze -->
-                    </div>
-
-                    <!-- Panel za uvoz / kreiranje novog benda ili učlanjenje preko koda -->
-                    <div class="band-manager-panel" style="margin-top: 20px;">
+                    <div class="band-card-content">
+                        <div>
+                            <h2 id="bandCardName" class="band-card-name">Ime Benda</h2>
+                            <!-- Uloga / Bedž statusa vlasništva -->
+                            <div class="band-badge-row" style="margin-top: 8px;">
+                                <span id="bandRoleBadge" class="badge-owner">OWNER</span>
+                                <span id="bandCardOwnerName" class="band-card-owner-name">Muzičar</span>
+                            </div>
+                        </div>
                         
-                        <!-- Učlanjenje preko koda -->
-                        <div class="manager-section">
-                            <span id="joinCodeTitle" class="manager-section-title">🔑 Priključi se bendu pomoću koda</span>
-                            <div class="input-group">
-                                <label id="joinCodeLabel" class="input-label" for="joinCodeInput">Unesi kod benda:</label>
-                                <input type="text" id="joinCodeInput" class="settings-input" placeholder="Npr. FANK99">
-                            </div>
-                            <button id="joinCodeSubmitBtn" class="btn-connect" onclick="submitJoinCode()" style="margin-top: 5px;">Priključi se</button>
-                        </div>
-
-                        <!-- Kreiranje novog benda -->
-                        <div class="manager-section" style="margin-top: 15px; border-top: 1px dashed #334155; padding-top: 15px;">
-                            <span id="addSectionTitle" class="manager-section-title">➕ Osnuj Novi Bend</span>
-                            <div class="input-group">
-                                <label id="bandNameLabel" class="input-label" for="newBandName">Naziv benda:</label>
-                                <input type="text" id="newBandName" class="settings-input" placeholder="Npr. Deep Purple">
-                            </div>
-                            <div class="input-group" style="margin-top: 5px;">
-                                <label id="bandUrlLabel" class="input-label" for="newBandUrl">Google Drive Link Foldera:</label>
-                                <input type="text" id="newBandUrl" class="settings-input" placeholder="Nalepi ceo URL drajv foldera">
-                            </div>
-                            <button id="connectBtn" class="btn-connect" onclick="addNewBandSubmit()" style="margin-top: 8px;">Osnuj novi bend</button>
+                        <!-- Grid akcionih tastera -->
+                        <div class="band-actions-grid">
+                            <button class="band-action-btn disabled">
+                                <span class="action-icon">📅</span>
+                                <span id="btnConcertsText">Concerts</span>
+                            </button>
+                            <button id="btnSongsAction" class="band-action-btn" onclick="openSongsView()">
+                                <span class="action-icon">🎵</span>
+                                <span id="btnSongsText">Songs</span>
+                            </button>
+                            <button class="band-action-btn disabled">
+                                <span class="action-icon">💼</span>
+                                <span>Kit</span>
+                            </button>
+                            <button class="band-action-btn disabled">
+                                <span class="action-icon">📁</span>
+                                <span>Docs</span>
+                            </button>
+                            <button id="btnMembersAction" class="band-action-btn" onclick="toggleMembersSection()">
+                                <span class="action-icon">👤</span>
+                                <span>Members</span>
+                            </button>
+                            <button id="btnSettingsAction" class="band-action-btn" onclick="toggleBandSettingsSection()">
+                                <span class="action-icon">⚙️</span>
+                                <span>Settings</span>
+                            </button>
                         </div>
                     </div>
                 </div>
 
-                <!-- ==========================================================================
-                     TAB 2: Repertoar & Mikseta (Stems Player)
-                     ========================================================================== -->
-                <div id="tabRepertoire" class="tab-content" style="display: none;">
-                    
-                    <!-- Kontrolna Tabla Plejera -->
-                    <div class="controls-master">
-                        <div class="buttons-row">
-                            <button id="playBtn" class="btn-play" onclick="togglePlay()" disabled style="width: 60%;">
-                                <span>▶ Pusti trake</span>
-                            </button>
-                            <button id="stopBtn" class="btn-stop" onclick="stopAudio()" disabled style="width: 35%;">
-                                <span>◼ Zaustavi</span>
-                            </button>
-                        </div>
-
-                        <!-- Globalne master kontrole jačine zvuka i mute -->
-                        <div class="master-volume-container">
-                            <button id="masterMuteBtn" class="btn-mute" onclick="toggleMasterMute()" style="width: auto; padding: 6px 12px;">UTIŠAJ SVE</button>
-                            <div class="volume-slider-container" style="flex-grow: 1; display: flex; align-items: center; justify-content: flex-end; margin-left: 10px;">
-                                <span id="masterVolLabel" class="master-vol-label">MASTER:</span>
-                                <input type="range" id="masterVolumeSlider" class="volume-slider" min="0" max="1" step="0.01" value="0.8" oninput="setMasterVolume(this.value)" style="margin-left: 10px; width: 100%;">
-                            </div>
-                        </div>
-
-                        <div class="seekbar-container" style="margin-top: 12px;">
-                            <input type="range" id="seekBar" class="seekbar" min="0" max="100" value="0" oninput="onSeek(this.value)">
-                        </div>
-
-                        <div class="time-container">
-                            <span id="currentTime">00:00</span>
-                            <span id="totalTime">00:00</span>
-                        </div>
-                    </div>
-
-                    <!-- Status Učitavanja i Sinhronizacije -->
-                    <div id="statusLabel" class="status-box" style="margin-top: 15px;">Izaberi pesmu sa leve strane da započneš...</div>
-
-                    <!-- Mikseta (Kompaktan single-row dizajn) -->
-                    <div id="mixerContainer" class="mixer"></div>
-                </div>
-
-            </div>
-        </div>
-
-    </div>
-
-    <!-- MODALNI PROZOR ZA PODEŠAVANJA (Giglist.no stil sa tabovima) -->
-    <div id="settingsModal" class="modal-overlay" style="display: none;" onclick="closeSettingsModalOnOverlay(event)">
-        <div class="modal-box">
-            <div class="modal-header">
-                <span id="settingsModalTitle" style="font-size: 1.1em; font-weight: 300; color: #38bdf8;">⚙️ Podešavanja</span>
-                <span class="modal-close-btn" onclick="closeSettingsModal()">×</span>
-            </div>
-            
-            <!-- Tabovi navigacija -->
-            <div class="modal-tabs">
-                <button id="tabBtn-regional" class="tab-btn active" onclick="switchSettingsTab('regional')">Aplikacija</button>
-                <button id="tabBtn-profile" class="tab-btn" onclick="switchSettingsTab('profile')">Profil</button>
-                <button id="tabBtn-password" class="tab-btn" onclick="switchSettingsTab('password')">Lozinka</button>
-                <button id="tabBtn-account" class="tab-btn" onclick="switchSettingsTab('account')">Nalog</button>
-            </div>
-
-            <!-- Tab 1: Regionalna podešavanja -->
-            <div id="settingsTab-regional" class="modal-tab-content">
-                <div class="input-group" style="margin-bottom: 12px;">
-                    <label class="input-label">Format vremena:</label>
-                    <select id="settingTimeFormat" class="settings-input" onchange="saveSetting('timeFormat', this.value)">
-                        <option value="24">24-časovni (23:59)</option>
-                        <option value="12">12-časovni (11:59 PM)</option>
-                    </select>
-                </div>
-                <div class="input-group" style="margin-bottom: 12px;">
-                    <label class="input-label">Format datuma:</label>
-                    <select id="settingDateFormat" class="settings-input" onchange="saveSetting('dateFormat', this.value)">
-                        <option value="DD.MM.YYYY">DD.MM.YYYY (19.08.2026)</option>
-                        <option value="MM/DD/YYYY">MM/DD/YYYY (08/19/2026)</option>
-                    </select>
-                </div>
-                <div class="input-group" style="margin-bottom: 12px;">
-                    <label class="input-label">Vremenska zona:</label>
-                    <select id="settingTimezone" class="settings-input" onchange="saveSetting('timezone', this.value)">
-                        <option value="Europe/Belgrade">Europe/Belgrade (GMT+2)</option>
-                        <option value="UTC">UTC (GMT+0)</option>
-                    </select>
-                </div>
-                <div class="input-group">
-                    <label class="input-label">Jedinica temperature:</label>
-                    <select id="settingTempUnit" class="settings-input" onchange="saveSetting('tempUnit', this.value)">
-                        <option value="C">Celzijus (°C)</option>
-                        <option value="F">Farenhajt (°F)</option>
-                    </select>
-                </div>
-            </div>
-
-            <!-- Tab 2: Profil podaci -->
-            <div id="settingsTab-profile" class="modal-tab-content" style="display: none;">
-                <div class="input-group" style="margin-bottom: 12px;">
-                    <label class="input-label">Ime muzičara:</label>
-                    <input type="text" id="settingDisplayName" class="settings-input">
-                </div>
-                <div class="input-group" style="margin-bottom: 15px;">
-                    <label class="input-label">Email adresa (samo čitanje):</label>
-                    <input type="text" id="settingEmail" class="settings-input" readonly style="opacity: 0.6; cursor: not-allowed;">
-                </div>
-                <button class="btn-connect" style="width: 100%;" onclick="updateProfileSettings()">Sačuvaj izmene</button>
-            </div>
-
-            <!-- Tab 3: Promena lozinke -->
-            <div id="settingsTab-password" class="modal-tab-content" style="display: none;">
-                <div class="input-group" style="margin-bottom: 12px;">
-                    <label class="input-label">Nova lozinka:</label>
-                    <input type="password" id="settingNewPassword" class="settings-input" placeholder="Najmanje 6 karaktera">
-                </div>
-                <div class="input-group" style="margin-bottom: 15px;">
-                    <label class="input-label">Potvrda nove lozinke:</label>
-                    <input type="password" id="settingConfirmPassword" class="settings-input" placeholder="Ponovi lozinku">
-                </div>
-                <button class="btn-connect" style="width: 100%;" onclick="updatePasswordSettings()">Promeni lozinku</button>
-            </div>
-
-            <!-- Tab 4: Brisanje naloga -->
-            <div id="settingsTab-account" class="modal-tab-content" style="display: none;">
-                <div class="danger-zone">
-                    <span class="manager-section-title" style="color: #ef4444; border-bottom: none; padding-bottom: 0;">⚠️ Upozorenje!</span>
-                    <p class="danger-text" style="margin-top: 5px; margin-bottom: 15px;">
-                        Brisanjem svog naloga trajno uklanjaš pristup svim bendovima i gubiš sve sačuvane mikseve u bazi. Ova akcija je nepovratna!
+                <!-- Prazno stanje kada korisnik tek treba da izabere ili napravi bend -->
+                <div id="dashboardEmptyState" class="player-status-card" style="text-align: center; padding: 40px;">
+                    <h3 id="emptyStateTitle" style="font-size: 1.3em; margin-bottom: 15px; font-weight: 400;">Dobrodošli u GigLab!</h3>
+                    <p id="emptyStateDesc" style="color: var(--text-secondary); margin-bottom: 25px; max-width: 500px; margin-left: auto; margin-right: auto;">
+                        Izaberite bend sa leve strane ili kliknite na "Novi bend" da započnete rad sa stemsima!
                     </p>
-                    <button class="btn-delete-band" style="width: 100%; background-color: #ef4444;" onclick="deleteUserAccount()">Trajno obriši moj nalog</button>
                 </div>
-            </div>
-        </div>
-    </div>
 
-    <!-- MODAL ZA UREĐIVANJE BENDA (Samo za Admine) -->
-    <div id="editBandModal" class="modal-overlay" style="display: none;" onclick="closeEditBandModalOnOverlay(event)">
-        <div class="modal-box" style="max-width: 450px;">
-            <div class="modal-header">
-                <span id="editBandModalTitle" style="font-size: 1.1em; font-weight: 300; color: #38bdf8;">⚙️ Uredi Bend</span>
-                <span class="modal-close-btn" onclick="closeEditBandModal()">×</span>
-            </div>
-            <div style="padding: 15px 0;">
-                <input type="hidden" id="editBandId">
-                <div class="input-group" style="margin-bottom: 12px;">
-                    <label class="input-label">Naziv benda:</label>
-                    <input type="text" id="editBandName" class="settings-input">
-                </div>
-                <div class="input-group" style="margin-bottom: 15px;">
-                    <label class="input-label">Google Drive Folder Link:</label>
-                    <input type="text" id="editBandUrl" class="settings-input">
-                </div>
-                <button class="btn-connect" style="width: 100%; margin-bottom: 15px;" onclick="saveEditBand()">Sačuvaj izmene</button>
-                
-                <div class="danger-zone" style="border-color: #ef4444; padding: 12px; background: rgba(239, 68, 68, 0.05);">
-                    <label class="input-label" style="color: #fca5a5;">Brisanje benda:</label>
-                    <p class="danger-text" style="font-size: 0.75em; margin: 4px 0 10px 0;">Ova opcija briše ceo bend i sve sačuvane presete pesama.</p>
-                    <button class="btn-delete-band" style="width: 100%; padding: 6px; font-size: 0.8em;" onclick="deleteBandFromModal()">Obriši bend</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        // ==========================================================================
-        // GIGSTEMS AUDIO ENGINE & CLOUD SYNCHRONIZATION LOGIC (v1.4.04)
-        // ==========================================================================
-
-        // Supabase konekcioni podaci
-        const SUPABASE_URL = "https://yqmxwgikcqibbkpqstux.supabase.co";
-        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlxbXh3Z2lrY3FpYmJrcHFzdHV4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxNjEwNDksImV4cCI6MjEwMjczNzA0OX0.TVedwos2OOmvggCK-zyevtV6S2Vfdax9e9ygHhKr5nA";
-
-        // Inicijalizacija Supabase Klijenta
-        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-        // TVOJ BEZBEDNI GOOGLE API KLJUČ (Ograničen na tvoj GitHub Pages domen)
-        const GIGSTEMS_API_KEY = "AIzaSyBiq4QbYuCtVyy9_-dJTCTcCtPfwZc-Gu8";
-
-        // Inicijalizacija Web Audio API-ja i globalnih audio promenljivih
-        let audioCtx;
-        let audioBuffers = [];
-        let sourceNodes = [];
-        let gainNodes = [];
-        let trackNames = [];
-        let isPlaying = false;
-        let startTime = 0;
-        let pauseOffset = 0;
-        let totalDuration = 0;
-        let timerInterval;
-
-        // Globalne kontrole za master jačinu zvuka
-        let masterGainNode; 
-        let isMasterMuted = false;
-
-        // Držanje stanja uloga i bendova
-        let bands = [];
-        let activeBandId = "";
-        let expandedBandId = ""; // Prati koji je bend trenutno otvoren u meniju
-        let currentSongName = "";
-        let allSongs = [];
-        let currentUserProfile = null;
-        let currentTab = "bands";
-
-        // Pamćenje i učitavanje izabranog jezika iz Local Storage-a
-        let currentLang = localStorage.getItem('gigstems_lang') || 'sr';
-        let isRegisterMode = false;
-        let registeredEmail = ""; // #NOVO v1.4.05 - Za pamćenje email-a tokom registracije radi verifikacije
-
-        // DOM elementi
-        const playBtn = document.getElementById('playBtn');
-        const stopBtn = document.getElementById('stopBtn');
-        const statusLabel = document.getElementById('statusLabel');
-        const songsList = document.getElementById('songsList');
-        const authContainer = document.getElementById('authContainer');
-        const appContainer = document.getElementById('appContainer');
-
-        // #NOVO v1.4.04 - URL Čišćenje tokena u realnom vremenu
-        // Čisti ružni i predugački access_token iz adresne trake pretraživača odmah nakon što ga Supabase obradi!
-        if (window.location.hash && window.location.hash.includes('access_token')) {
-            setTimeout(() => {
-                window.history.replaceState(null, null, window.location.pathname + window.location.search);
-            }, 600);
-        }
-
-        // ==========================================================================
-        // 1. AUTENTIFIKACIJA (Supabase Auth & Profiles)
-        // ==========================================================================
-
-        // Slušač promena stanja sesije (Automatsko logovanje pri osvežavanju)
-        supabaseClient.auth.onAuthStateChange((event, session) => {
-            if (session) {
-                authContainer.style.display = "none";
-                appContainer.style.display = "flex";
-                loadUserProfile(session.user);
-            } else {
-                appContainer.style.display = "none";
-                authContainer.style.display = "block";
-                // #NOVO v1.4.05 - Osigurajmo prikaz glavnog login ekrana umesto verifikacije pri odjavljivanju
-                document.getElementById('authMainForm').style.display = "block";
-                document.getElementById('authVerificationForm').style.display = "none";
-                resetAudioState();
-            }
-        });
-
-        // Učitavanje i prepoznavanje imena ulogovanog muzičara
-        async function loadUserProfile(user) {
-            const { data, error } = await supabaseClient
-                .from('profiles')
-                .select('*')
-                .eq('id', user.id)
-                .single();
-
-            if (data) {
-                currentUserProfile = data;
-                document.getElementById('currentUserName').innerText = data.display_name || user.email;
-                document.getElementById('currentUserName').title = user.email;
-                
-                // Avatar krug
-                const firstLetter = (data.display_name || user.email).charAt(0).toUpperCase();
-                document.getElementById('userAvatarCircle').innerText = firstLetter;
-
-                // Popunjavanje polja u modal podešavanjima
-                document.getElementById('settingDisplayName').value = data.display_name || "";
-                document.getElementById('settingEmail').value = data.email || user.email;
-
-                // Učitavamo bendove za ulogovanog korisnika
-                loadUserBands();
-            }
-        }
-
-        // Prebacivanje između formi Login i Registracija
-        function toggleAuthMode() {
-            isRegisterMode = !isRegisterMode;
-            const title = document.getElementById('authTitle');
-            const submitBtn = document.getElementById('authSubmitBtn');
-            const switchLink = document.getElementById('authSwitchLink');
-            const displayNameGroup = document.getElementById('authDisplayNameGroup');
-
-            if (isRegisterMode) {
-                title.innerText = i18n[currentLang].authTitleRegister;
-                submitBtn.innerText = i18n[currentLang].authBtnRegister;
-                switchLink.innerText = i18n[currentLang].authSwitchToLogin;
-                displayNameGroup.style.display = "flex";
-            } else {
-                title.innerText = i18n[currentLang].authTitleLogin;
-                submitBtn.innerText = i18n[currentLang].authBtnLogin;
-                switchLink.innerText = i18n[currentLang].authSwitchToRegister;
-                displayNameGroup.style.display = "none";
-            }
-        }
-
-        // #NOVO v1.4.05 - Slanje forme za prijavu/registraciju sa podrškom za OTP na istom ekranu
-        async function handleAuthSubmit() {
-            const email = document.getElementById('authEmailInput').value.trim();
-            const password = document.getElementById('authPasswordInput').value.trim();
-            const displayName = document.getElementById('authDisplayNameInput').value.trim();
-
-            if (!email || !password) {
-                alert(currentLang === 'sr' ? "Popunite email i lozinku!" : "Please enter email and password!");
-                return;
-            }
-
-            if (isRegisterMode) {
-                // Registracija novog naloga
-                const { data, error } = await supabaseClient.auth.signUp({
-                    email,
-                    password,
-                    options: {
-                        data: {
-                            display_name: displayName || email.split('@')[0]
-                        }
-                    }
-                });
-
-                if (error) {
-                    alert(i18n[currentLang].authError.replace("{msg}", error.message));
-                } else {
-                    // Sačuvajmo email za potrebe OTP verifikacije
-                    registeredEmail = email;
-                    // Prebaci se na verifikacioni ekran umesto na login
-                    document.getElementById('authMainForm').style.display = "none";
-                    document.getElementById('authVerificationForm').style.display = "block";
-                    document.getElementById('verificationCodeInput').value = "";
-                    alert(currentLang === 'sr' ? 
-                        "Registracija uspešna! Poslat vam je 6-cifreni kod na e-mail. Unesite ga ispod:" : 
-                        "Registration successful! A 6-digit code has been sent to your email. Enter it below:");
-                }
-            } else {
-                // Prijavljivanje na postojeći nalog
-                const { data, error } = await supabaseClient.auth.signInWithPassword({
-                    email,
-                    password
-                });
-
-                if (error) {
-                    // #NOVO v1.4.05 - Pametan prelaz na verifikaciju ukoliko nalog nije potvrđen
-                    if (error.message.toLowerCase().includes("confirm") || error.message.toLowerCase().includes("verify")) {
-                        registeredEmail = email;
-                        document.getElementById('authMainForm').style.display = "none";
-                        document.getElementById('authVerificationForm').style.display = "block";
-                        document.getElementById('verificationCodeInput').value = "";
-                        alert(currentLang === 'sr' ? 
-                            "Vaš nalog nije verifikovan. Unesite aktivacioni kod iz e-maila:" : 
-                            "Your account is not verified. Please enter the activation code from your email:");
-                    } else {
-                        alert(i18n[currentLang].authError.replace("{msg}", error.message));
-                    }
-                }
-            }
-        }
-
-        // #NOVO v1.4.05 - Potvrda OTP koda na istom ekranu
-        async function handleVerificationSubmit() {
-            const code = document.getElementById('verificationCodeInput').value.trim();
-            if (!code) {
-                alert(currentLang === 'sr' ? "Unesite aktivacioni kod!" : "Please enter the activation code!");
-                return;
-            }
-
-            const { data, error } = await supabaseClient.auth.verifyOtp({
-                email: registeredEmail,
-                token: code,
-                type: 'signup'
-            });
-
-            if (error) {
-                alert(i18n[currentLang].authError.replace("{msg}", error.message));
-            } else {
-                alert(i18n[currentLang].verificationSuccess);
-                // Sesija se automatski ažurira i onAuthStateChange otvara program!
-            }
-        }
-
-        // #NOVO v1.4.05 - Otkazivanje verifikacije i povratak na glavnu formu
-        function cancelVerification() {
-            document.getElementById('authVerificationForm').style.display = "none";
-            document.getElementById('authMainForm').style.display = "block";
-        }
-
-        // Odjavljivanje korisnika sa sistema
-        async function handleLogout() {
-            stopAudio();
-            closeProfileMenu();
-            const { error } = await supabaseClient.auth.signOut();
-        }
-
-        // ==========================================================================
-        // 2. SPA METOD NAVIGACIJE & MENU CONTROLS (v1.4.04)
-        // ==========================================================================
-        
-        function switchTab(tabId) {
-            currentTab = tabId;
-            
-            // Kontrola prikaza repertoar kolone
-            const repCol = document.getElementById('repertoireColumn');
-            const mobSongsBtn = document.getElementById('mobileSongsBtn');
-
-            if (tabId === 'repertoire' && bands.length > 0) {
-                repCol.style.display = "flex";
-                mobSongsBtn.style.display = "inline-block";
-            } else {
-                repCol.style.display = "none";
-                mobSongsBtn.style.display = "none";
-            }
-
-            // Prikazujemo odgovarajući tab u centralnom delu
-            document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
-            document.getElementById(`tab${tabId.charAt(0).toUpperCase() + tabId.slice(1)}`).style.display = 'block';
-
-            closeAllMobilePanels();
-        }
-
-        // Kontrola fioka na mobilnim uređajima
-        function toggleSidebar(isOpen) {
-            document.getElementById('appSidebar').classList.toggle('open', isOpen);
-            document.getElementById('sidebarOverlay').classList.toggle('open', isOpen);
-        }
-
-        function toggleRepertoire(isOpen) {
-            document.getElementById('repertoireColumn').classList.toggle('open', isOpen);
-            document.getElementById('sidebarOverlay').classList.toggle('open', isOpen);
-        }
-
-        function closeAllMobilePanels() {
-            toggleSidebar(false);
-            toggleRepertoire(false);
-        }
-
-        // Kontrola profil popup menija na dnu sidebara
-        function toggleProfileMenu(e) {
-            e.stopPropagation();
-            const menu = document.getElementById('profilePopupMenu');
-            const isVisible = menu.style.display === 'flex';
-            menu.style.display = isVisible ? 'none' : 'flex';
-        }
-
-        // Zatvori profil meni
-        function closeProfileMenu() {
-            const menu = document.getElementById('profilePopupMenu');
-            if (menu) menu.style.display = 'none';
-        }
-
-        // Zatvori profil meni ako se klikne bilo gde drugde na ekranu
-        document.addEventListener('click', () => {
-            closeProfileMenu();
-        });
-
-        // MODAL PROZOR ZA PODEŠAVANJA (Izbor tabova)
-        function openSettingsModal() {
-            closeProfileMenu();
-            document.getElementById('settingsModal').style.display = 'flex';
-            switchSettingsTab('regional');
-        }
-
-        // Zatvaranje modala podešavanja
-        function closeSettingsModal() {
-            document.getElementById('settingsModal').style.display = 'none';
-        }
-
-        function closeSettingsModalOnOverlay(e) {
-            if (e.target.id === 'settingsModal') {
-                closeSettingsModal();
-            }
-        }
-
-        function switchSettingsTab(tabName) {
-            // Gasimo aktivne tab dugmiće
-            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-            // Palimo izabrani
-            document.getElementById(`tabBtn-${tabName}`).classList.add('active');
-
-            // Sakrivamo sve tabove
-            document.querySelectorAll('.modal-tab-content').forEach(content => content.style.display = 'none');
-            // Prikazujemo izabrani
-            document.getElementById(`settingsTab-${tabName}`).style.display = 'block';
-        }
-
-        // MODAL ZA UREĐIVANJE BENDA
-        function openEditBandModal(bandId) {
-            const band = bands.find(b => b.id === bandId);
-            if (!band) return;
-
-            document.getElementById('editBandId').value = band.id;
-            document.getElementById('editBandName').value = band.name;
-            document.getElementById('editBandUrl').value = band.rawUrl || "";
-
-            document.getElementById('editBandModal').style.display = 'flex';
-        }
-
-        function closeEditBandModal() {
-            document.getElementById('editBandModal').style.display = 'none';
-        }
-
-        function closeEditBandModalOnOverlay(e) {
-            if (e.target.id === 'editBandModal') {
-                closeEditBandModal();
-            }
-        }
-
-        // ==========================================================================
-        // 3. MENADŽMENT BENDOVA (Supabase DB Queries & Submenus)
-        // ==========================================================================
-
-        // Učitavanje svih bendova čiji je korisnik član
-        async function loadUserBands() {
-            if (!currentUserProfile) return;
-
-            const { data, error } = await supabaseClient
-                .from('band_members')
-                .select(`
-                    role,
-                    bands ( id, name, folder_id, raw_url, join_code )
-                `)
-                .eq('user_id', currentUserProfile.id);
-
-            if (data) {
-                bands = data.map(item => ({
-                    id: item.bands.id,
-                    name: item.bands.name,
-                    folderId: item.bands.folder_id,
-                    rawUrl: item.bands.raw_url,
-                    joinCode: item.bands.join_code,
-                    role: item.role
-                }));
-
-                const savedActive = localStorage.getItem('gigstems_active_band');
-                if (bands.length > 0) {
-                    if (savedActive && bands.some(b => b.id === savedActive)) {
-                        activeBandId = savedActive;
-                        expandedBandId = activeBandId; // Aktivni je podrazumevano i otvoren
-                    } else {
-                        activeBandId = bands[0].id;
-                        expandedBandId = activeBandId;
-                        localStorage.setItem('gigstems_active_band', activeBandId);
-                    }
-                } else {
-                    activeBandId = "";
-                    expandedBandId = "";
-                    localStorage.setItem('gigstems_active_band', "");
-                }
-
-                renderBandsUI();
-                renderSidebarBands();
-                loadSongsFromActiveBand();
-            }
-        }
-
-        // Iscrtavanje leve liste bendova u Sidebar-u (Sa dinamičkim preklapanjem/podmenijem)
-        function renderSidebarBands() {
-            const listContainer = document.getElementById('sidebarBandsList');
-            listContainer.innerHTML = "";
-
-            if (bands.length === 0) {
-                listContainer.innerHTML = `<p style="padding:10px; font-size:0.8em; color:#475569; text-align:center;">Nema unetih bendova</p>`;
-                return;
-            }
-
-            bands.forEach(band => {
-                const itemWrapper = document.createElement('div');
-                itemWrapper.className = "sidebar-band-item-wrapper";
-
-                const isExpanded = band.id === expandedBandId;
-                const isActive = band.id === activeBandId;
-
-                itemWrapper.innerHTML = `
-                    <div class="sidebar-band-row ${isActive ? 'active' : ''}" onclick="toggleBandSubmenu('${band.id}')">
-                        <span class="dot-icon">${isExpanded ? '▼' : '▶'}</span>
-                        <span class="band-title-text">${band.name}</span>
-                    </div>
-                    ${isExpanded ? `
-                        <div class="sidebar-band-submenu">
-                            <button class="nav-sub-item active" onclick="selectBandSection('${band.id}', 'stems')">🎵 Stemovi</button>
+                <!-- PANEL ZA UPRAVLJANJE BENDOM (Dynamic Sub-sections) -->
+                <div id="bandAdminSection" class="band-admin-section" style="display: none;">
+                    
+                    <!-- Formular za dodavanje i pravljenje novog benda -->
+                    <div id="newBandForm" style="display: none;">
+                        <h3 id="addSectionTitle" class="band-admin-title">➕ Dodaj Novi Bend</h3>
+                        <div class="input-group">
+                            <label id="bandNameLabel" class="input-label" for="newBandName">Naziv novog benda:</label>
+                            <input type="text" id="newBandName" class="settings-input" placeholder="Npr. Fankomatics">
                         </div>
-                    ` : ''}
-                `;
-                listContainer.appendChild(itemWrapper);
-            });
-        }
-
-        // Klik na naziv benda u Sidebar-u: Otvara/Zatvara podmeni
-        function toggleBandSubmenu(bandId) {
-            if (expandedBandId === bandId) {
-                expandedBandId = ""; // Zatvara ako je već otvoren
-            } else {
-                expandedBandId = bandId; // Otvara izabrani
-            }
-            renderSidebarBands();
-        }
-
-        // Izbor sekcije "Stemovi" u podmeniju
-        function selectBandSection(bandId, section) {
-            if (section === 'stems') {
-                setActiveBand(bandId);
-            }
-        }
-
-        // Iscrtavanje kartica bendova u delu "Moji Bendovi"
-        async function renderBandsUI() {
-            const grid = document.getElementById('bandsGrid');
-            grid.innerHTML = "";
-
-            if (bands.length === 0) {
-                grid.innerHTML = `<div style="padding: 20px; text-align: center; color: #64748b; font-weight: 300;">${i18n[currentLang].createFirstBandMsg}</div>`;
-                document.getElementById('activeBandNameLabel').innerText = "";
-                return;
-            }
-
-            const actBand = bands.find(b => b.id === activeBandId);
-            if (actBand) {
-                document.getElementById('activeBandNameLabel').innerText = actBand.name;
-            }
-
-            for (let band of bands) {
-                const card = document.createElement('div');
-                card.className = "band-card";
-                
-                const { data: membersData } = await supabaseClient
-                    .from('band_members')
-                    .select('role, profiles(display_name, email)')
-                    .eq('band_id', band.id);
-
-                let membersListHtml = "";
-                if (membersData) {
-                    membersListHtml = membersData.map(m => {
-                        const name = m.profiles.display_name || m.profiles.email.split('@')[0];
-                        const roleText = m.role === 'admin' ? "Admin" : "Member";
-                        return `<li style="font-size:0.8em; color:#94a3b8; margin-top:2px; font-weight: 300;">• ${name} (${roleText})</li>`;
-                    }).join("");
-                }
-
-                const roleBadgeText = band.role === 'admin' ? i18n[currentLang].roleAdmin : i18n[currentLang].roleUser;
-                const isAdmin = band.role === 'admin';
-
-                card.innerHTML = `
-                    <div class="band-card-logo-zone">
-                        <span class="band-card-logo-placeholder">🎸</span>
-                        <span style="font-size:0.7em; color:#64748b; font-weight: 300;">v1.4.04</span>
+                        <div class="input-group" style="margin-bottom: 20px;">
+                            <label id="bandUrlLabel" class="input-label" for="newBandUrl">Google Drive Link Foldera:</label>
+                            <input type="text" id="newBandUrl" class="settings-input" placeholder="Nalepi link drajv foldera ovde">
+                        </div>
+                        <button id="connectBtn" class="btn-connect" onclick="addNewBandSubmit()">Dodaj novi bend</button>
                     </div>
-                    <div class="band-card-info-zone">
-                        <div class="band-card-header">
-                            <span class="band-card-name" style="font-weight: 300;">${band.name}</span>
-                            <span class="band-role-badge ${band.role}">${roleBadgeText}</span>
+
+                    <!-- Podešavanja / Izmena postojećeg benda (Samo za Šefa / Admina) -->
+                    <div id="editBandForm" style="display: none;">
+                        <h3 id="editSectionTitle" class="band-admin-title">✏️ Uredi Aktivni Bend</h3>
+                        <div class="input-group">
+                            <label id="renameBandLabel" class="input-label" for="editBandName">Naziv trenutnog benda:</label>
+                            <input type="text" id="editBandName" class="settings-input">
+                        </div>
+                        <div class="input-group" style="margin-bottom: 20px;">
+                            <label id="renameBandUrlLabel" class="input-label" for="editBandUrl">Link Drive foldera:</label>
+                            <input type="text" id="editBandUrl" class="settings-input">
                         </div>
                         
-                        <div style="margin-top: 10px;">
-                            <span class="input-label">${i18n[currentLang].bandMembersTitle}</span>
-                            <ul style="list-style:none; margin-top:5px;">
-                                ${membersListHtml}
-                            </ul>
+                        <div style="display: flex; gap: 15px;">
+                            <button id="renameBtn" class="btn-connect" onclick="updateBandSubmit()">Sačuvaj izmene</button>
+                            <button id="deleteBandBtn" class="btn-stop" onclick="deleteActiveBand()">❌ Obriši bend</button>
                         </div>
+                    </div>
 
-                        <div style="margin-top: 10px; padding: 8px; background-color:#0f172a; border-radius:6px; border:1px dashed #334155;">
-                            <span class="input-label" style="color:#38bdf8;">${i18n[currentLang].bandCodeTitle}</span>
-                            <span style="font-family:monospace; color:#fff; display:block; margin-top:3px; font-size:1.1em; font-weight: 300;">${band.joinCode}</span>
+                    <!-- Članovi benda, pristupni kodovi i slanje pozivnica -->
+                    <div id="membersManagementSection" style="display: none;">
+                        <h3 id="bandMembersTitle" class="band-admin-title">👥 Članovi benda</h3>
+                        <div id="bandMembersList" style="margin-bottom: 20px; display: flex; flex-direction: column; gap: 8px;">
+                            <!-- Dinamička lista članova sa ulogama -->
                         </div>
+                        
+                        <div class="sidebar-divider" style="margin: 20px 0;"></div>
+                        
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
+                            <div>
+                                <h4 id="bandCodeTitle" class="input-label" style="font-size: 1em; color: var(--text-primary); margin-bottom: 8px;">🔑 Pristupni kod benda:</h4>
+                                <div style="display: flex; gap: 10px;">
+                                    <input type="text" id="bandJoinCodeDisplay" class="settings-input" readonly style="text-align: center; font-weight: bold; font-size: 1.1em; letter-spacing: 2px;">
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <h4 id="joinCodeLabel" class="input-label" style="font-size: 1em; color: var(--text-primary); margin-bottom: 8px;">Kod za učlanjenje u drugi bend:</h4>
+                                <div style="display: flex; gap: 10px;">
+                                    <input type="text" id="joinCodeInput" class="settings-input" placeholder="Npr. FANK99">
+                                    <button id="joinCodeSubmitBtn" class="btn-connect" onclick="submitJoinCode()">Priključi se</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
-                        <!-- Panel za administraciju (Aktivan isključivo za admine) -->
-                        <div class="band-card-actions">
-                            <button class="btn-band-action" onclick="setActiveBand('${band.id}')" style="background-color: ${band.id === activeBandId ? '#38bdf8' : '#334155'}; color: ${band.id === activeBandId ? '#0f172a' : '#fff'}; font-weight: 300;">
-                                🎵 ${currentLang === 'sr' ? 'Sviraj' : 'Gig'}
+                </div>
+            </div>
+
+            <!-- VIEW B: Repertoar & Stem Player (Column 2 & Column 3) -->
+            <div id="stemsPlayerContainer" class="workspace-container" style="display: none;">
+                
+                <!-- KOLONA 2: Repertoar / Lista Pesama -->
+                <div id="repertoireColumn" class="repertoire-column">
+                    <!-- Brza pretraga -->
+                    <div class="search-container">
+                        <input type="text" id="searchInput" class="search-input" placeholder="🔍 Pretraži pesmu..." oninput="filterSongs(this.value)">
+                    </div>
+
+                    <!-- Naslov i Spisak pesama -->
+                    <div class="songs-title-container">
+                        <span id="songsTitle" class="songs-title">📋 Spisak Pesama</span>
+                        <button id="btnBackToDashboardLink" class="btn-back-dash" onclick="exitRepertoireToDashboard()">◀ Nazad</button>
+                    </div>
+                    <div id="songsList" class="songs-list">
+                        <!-- Popunjava se dinamički iz drajva aktivnog benda -->
+                    </div>
+                </div>
+
+                <!-- KOLONA 3: Mikser / Plejer (Centralni radni deo za audio) -->
+                <div class="workspace-wrapper">
+                    <!-- Status audio mašine i master kontrole -->
+                    <div class="player-status-card">
+                        <div id="statusLabel" class="status-label">Prijavi se i izaberi pesmu da započneš...</div>
+                        
+                        <div class="master-controls">
+                            <button id="playBtn" class="btn-connect" onclick="togglePlay()" disabled>
+                                <span>Pusti trake</span>
                             </button>
-                            ${isAdmin ? `
-                                <button class="btn-band-action" onclick="openEditBandModal('${band.id}')" style="font-weight: 300;">⚙️ ${currentLang === 'sr' ? 'Uredi' : 'Edit'}</button>
-                            ` : `
-                                <button class="btn-band-action" style="opacity:0.3; cursor:not-allowed; font-weight: 300;" title="${i18n[currentLang].onlyAdminEditMsg}">⚙️ Lock</button>
-                            `}
+                            <button id="stopBtn" class="btn-stop" onclick="stopAudio()" disabled>
+                                <span>Zaustavi</span>
+                            </button>
+                            
+                            <!-- Master jačina zvuka -->
+                            <div class="volume-container">
+                                <span id="masterVolLabel" class="input-label" style="margin-bottom: 0;">MASTER:</span>
+                                <input type="range" id="masterVolumeSlider" class="vol-slider" min="0" max="1" step="0.01" value="0.8" oninput="setMasterVolume(this.value)">
+                                <button id="masterMuteBtn" class="btn-mute" style="width: auto; padding: 6px 12px;" onclick="toggleMasterMute()">UTIŠAJ SVE</button>
+                            </div>
                         </div>
                     </div>
-                `;
-                grid.appendChild(card);
-            }
-        }
 
-        // Postavljanje aktivnog benda i automatski skok na repertoar
-        function setActiveBand(bandId) {
-            activeBandId = bandId;
-            expandedBandId = bandId; // Drži ga otvorenim u sidebar-u
-            localStorage.setItem('gigstems_active_band', bandId);
-            
-            stopAudio();
-            document.getElementById('mixerContainer').innerHTML = "";
-            
-            const activeBand = bands.find(b => b.id === activeBandId);
-            if (activeBand) {
-                document.getElementById('activeBandNameLabel').innerText = activeBand.name;
-            }
-
-            renderBandsUI();
-            renderSidebarBands();
-            loadSongsFromActiveBand();
-            switchTab('repertoire');
-        }
-
-        // Osnivanje novog benda (Uloga: Admin)
-        async function addNewBandSubmit() {
-            if (!currentUserProfile) return;
-
-            const nameInput = document.getElementById('newBandName');
-            const urlInput = document.getElementById('newBandUrl');
-            const name = nameInput.value.trim();
-            const rawUrl = urlInput.value.trim();
-
-            if (!name || !rawUrl) {
-                alert(currentLang === 'sr' ? "Popunite sva polja!" : "Please fill out all fields!");
-                return;
-            }
-
-            const folderId = extractFolderId(rawUrl);
-            
-            // Generišemo nasumični jedinstveni Join Code od 6 karaktera
-            const joinCode = 'GIG-' + Math.floor(100 + Math.random() * 900);
-
-            // Korak A: Upisujemo novi bend u tabelu 'bands'
-            const { data: bandData, error: bandError } = await supabaseClient
-                .from('bands')
-                .insert({
-                    name,
-                    folder_id: folderId,
-                    raw_url: rawUrl,
-                    join_code: joinCode
-                })
-                .select()
-                .single();
-
-            if (bandError) {
-                alert(i18n[currentLang].authError.replace("{msg}", bandError.message));
-                return;
-            }
-
-            // Korak B: Automatski postavljamo osnivača kao glavnog ADMINA u tabeli 'band_members'
-            const { error: memberError } = await supabaseClient
-                .from('band_members')
-                .insert({
-                    band_id: bandData.id,
-                    user_id: currentUserProfile.id,
-                    role: 'admin'
-                });
-
-            if (memberError) {
-                alert(i18n[currentLang].authError.replace("{msg}", memberError.message));
-                return;
-            }
-
-            nameInput.value = "";
-            urlInput.value = "";
-            
-            // Osvežavamo prikaz
-            loadUserBands();
-        }
-
-        // Priključivanje postojećem bendu pomoću Join koda
-        async function submitJoinCode() {
-            if (!currentUserProfile) return;
-
-            const codeInput = document.getElementById('joinCodeInput');
-            const code = codeInput.value.trim().toUpperCase();
-
-            if (!code) {
-                alert(currentLang === 'sr' ? "Unesite pristupni kod!" : "Please enter band access code!");
-                return;
-            }
-
-            // Pronalazimo bend sa tim kodom u bazi
-            const { data: bandData, error: bandError } = await supabaseClient
-                .from('bands')
-                .select('*')
-                .eq('join_code', code)
-                .single();
-
-            if (bandError || !bandData) {
-                alert(currentLang === 'sr' ? "Nevažeći kod benda!" : "Invalid band code!");
-                return;
-            }
-
-            // Proveravamo da li je već član
-            const { data: isMember } = await supabaseClient
-                .from('band_members')
-                .select('*')
-                .eq('band_id', bandData.id)
-                .eq('user_id', currentUserProfile.id)
-                .single();
-
-            if (isMember) {
-                alert(currentLang === 'sr' ? "Već ste član ovog benda!" : "You are already a member of this band!");
-                return;
-            }
-
-            // Upisujemo novog korisnika kao običnog člana (User)
-            const { error: joinError } = await supabaseClient
-                .from('band_members')
-                .insert({
-                    band_id: bandData.id,
-                    user_id: currentUserProfile.id,
-                    role: 'user'
-                });
-
-            if (joinError) {
-                alert(joinError.message);
-                return;
-            }
-
-            alert(i18n[currentLang].joinCodeSuccess);
-            codeInput.value = "";
-            loadUserBands();
-        }
-
-        // Snimanje izmena u bendu iz modalnog prozora
-        async function saveEditBand() {
-            const bandId = document.getElementById('editBandId').value;
-            const newName = document.getElementById('editBandName').value.trim();
-            const newUrl = document.getElementById('editBandUrl').value.trim();
-
-            if (!newName || !newUrl) {
-                alert(currentLang === 'sr' ? "Popunite sva polja!" : "Please fill out all fields!");
-                return;
-            }
-
-            const folderId = extractFolderId(newUrl);
-
-            const { error } = await supabaseClient
-                .from('bands')
-                .update({
-                    name: newName,
-                    folder_id: folderId,
-                    raw_url: newUrl
-                })
-                .eq('id', bandId);
-
-            if (error) {
-                alert(error.message);
-                return;
-            }
-
-            closeEditBandModal();
-            loadUserBands();
-        }
-
-        // Brisanje benda iz modalnog prozora
-        async function deleteBandFromModal() {
-            const bandId = document.getElementById('editBandId').value;
-            const confirmMsg = i18n[currentLang].deleteBandConfirm;
-            if (!confirm(confirmMsg)) return;
-
-            const { error } = await supabaseClient
-                .from('bands')
-                .delete()
-                .eq('id', bandId);
-
-            if (error) {
-                alert(error.message);
-                return;
-            }
-
-            closeEditBandModal();
-            loadUserBands();
-        }
-
-        // ==========================================================================
-        // 4. LOKALNA MEMORIJA / SPAVANJE PODEŠAVANJA (v1.4.04 Settings)
-        // ==========================================================================
-
-        function saveSetting(key, value) {
-            localStorage.setItem(`setting_${key}`, value);
-        }
-
-        // Učitavanje snimljenih konfiguracija regionalnih opcija u modal
-        function loadSavedSettings() {
-            document.getElementById('settingTimeFormat').value = localStorage.getItem('setting_timeFormat') || '24';
-            document.getElementById('settingDateFormat').value = localStorage.getItem('setting_dateFormat') || 'DD.MM.YYYY';
-            document.getElementById('settingTimezone').value = localStorage.getItem('setting_timezone') || 'Europe/Belgrade';
-            document.getElementById('settingTempUnit').value = localStorage.getItem('setting_tempUnit') || 'C';
-        }
-
-        // Čuvanje izmena korisničkog imena u bazi
-        async function updateProfileSettings() {
-            if (!currentUserProfile) return;
-            const newName = document.getElementById('settingDisplayName').value.trim();
-
-            if (!newName) {
-                alert(currentLang === 'sr' ? "Ime ne može biti prazno!" : "Name cannot be empty!");
-                return;
-            }
-
-            const { error } = await supabaseClient
-                .from('profiles')
-                .update({ display_name: newName })
-                .eq('id', currentUserProfile.id);
-
-            if (error) {
-                alert(error.message);
-            } else {
-                alert(currentLang === 'sr' ? "Profil je uspešno ažuriran!" : "Profile successfully updated!");
-                loadUserProfile(currentUserProfile);
-            }
-        }
-
-        // Brza i sigurna promena šifre na Supabase-u
-        async function updatePasswordSettings() {
-            const newPassword = document.getElementById('settingNewPassword').value.trim();
-            const confirmPassword = document.getElementById('settingConfirmPassword').value.trim();
-
-            if (!newPassword || newPassword.length < 6) {
-                alert(currentLang === 'sr' ? "Lozinka mora imati najmanje 6 karaktera!" : "Password must be at least 6 characters!");
-                return;
-            }
-
-            if (newPassword !== confirmPassword) {
-                alert(currentLang === 'sr' ? "Lozinke se ne podudaraju!" : "Passwords do not match!");
-                return;
-            }
-
-            const { error } = await supabaseClient.auth.updateUser({ password: newPassword });
-
-            if (error) {
-                alert(error.message);
-            } else {
-                alert(currentLang === 'sr' ? "Lozinka je uspešno promenjena!" : "Password successfully changed!");
-                document.getElementById('settingNewPassword').value = "";
-                document.getElementById('settingConfirmPassword').value = "";
-            }
-        }
-
-        // Trajno brisanje korisničkog naloga iz baze
-        async function deleteUserAccount() {
-            if (!confirm(currentLang === 'sr' ? "Da li sigurno želiš da obrišeš svoj nalog? Sve tvoje članstvo u bendovima će biti obrisano." : "Are you sure you want to delete your account? All your band memberships will be deleted.")) {
-                return;
-            }
-
-            const { error } = await supabaseClient
-                .from('profiles')
-                .delete()
-                .eq('id', currentUserProfile.id);
-
-            if (error) {
-                alert(error.message);
-            } else {
-                alert(currentLang === 'sr' ? "Tvoj profil je uklonjen!" : "Your profile has been removed!");
-                handleLogout();
-            }
-        }
-
-        // ==========================================================================
-        // 5. AUDIO ENGINE & REAL-TIME CLOUD PRESETS (Stems Core)
-        // ==========================================================================
-
-        // Resetovanje kompletnog audio sistema pri odjavljivanju ili brisanju
-        function resetAudioState() {
-            stopAudio();
-            document.getElementById('mixerContainer').innerHTML = "";
-            songsList.innerHTML = "";
-            playBtn.disabled = true;
-            stopBtn.disabled = true;
-            document.getElementById('currentTime').innerText = "00:00";
-            document.getElementById('totalTime').innerText = "00:00";
-            document.getElementById('seekBar').value = 0;
-            updateStatusText('statusInit');
-        }
-
-        // Učitavanje spiska pesama sa Drive-a za selektovani bend
-        async function loadSongsFromActiveBand() {
-            if (bands.length === 0 || !activeBandId) {
-                resetAudioState();
-                return;
-            }
-
-            const activeBand = bands.find(b => b.id === activeBandId);
-            if (!activeBand) return;
-
-            if (GIGSTEMS_API_KEY === "UPISI_OVDE_SVOJ_API_KLJUC") {
-                const warningMsg = i18n[currentLang].apiKeyWarning;
-                songsList.innerHTML = `<div style="padding:15px; color:#ef4444; font-size:0.85em; text-align:center; font-weight: 300;">${warningMsg}</div>`;
-                return;
-            }
-
-            songsList.innerHTML = `<div style="padding:15px; text-align:center; color:#94a3b8; font-weight: 300;">${i18n[currentLang].statusConnecting}</div>`;
-            
-            const query = `'${activeBand.folderId}' in parents and mimeType = 'application/vnd.google-apps.folder' and trashed = false`;
-            const url = `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(query)}&fields=files(id,name)&key=${GIGSTEMS_API_KEY}`;
-
-            try {
-                const response = await fetch(url);
-                if (!response.ok) throw new Error();
-
-                const data = await response.json();
-                allSongs = data.files || [];
-
-                allSongs.sort((a, b) => a.name.localeCompare(b.name));
-                renderSongsList(allSongs);
-            } catch (err) {
-                songsList.innerHTML = `<div style="padding:15px; color:#ef4444; font-size:0.85em; text-align:center; font-weight: 300;">${i18n[currentLang].statusConnError}</div>`;
-            }
-        }
-
-        // Iscrtavanje pesama u srednjoj koloni
-        function renderSongsList(songsArray) {
-            songsList.innerHTML = "";
-            
-            if (songsArray.length === 0) {
-                songsList.innerHTML = `<div style="padding:15px; text-align:center; color:#94a3b8; font-weight: 300;">${i18n[currentLang].noSongs}</div>`;
-                return;
-            }
-
-            songsArray.forEach(song => {
-                const div = document.createElement('div');
-                div.className = "song-item";
-                div.innerText = song.name;
-                div.id = `song-item-${song.id}`;
-                div.onclick = () => loadSongStems(song.id, song.name);
-                songsList.appendChild(div);
-            });
-        }
-
-        // Učitavanje i sinhrono dekodiranje traka u RAM
-        async function loadSongStems(songFolderId, songName) {
-            toggleRepertoire(false); // Skupljamo panel na telefonu za bolji rad
-
-            document.querySelectorAll('.song-item').forEach(el => el.classList.remove('active'));
-            const activeEl = document.getElementById(`song-item-${songFolderId}`);
-            if (activeEl) activeEl.classList.add('active');
-
-            stopAudio();
-            updateStatusText('statusLoading');
-            playBtn.disabled = true;
-            stopBtn.disabled = true;
-            document.getElementById('mixerContainer').innerHTML = '';
-
-            if (!audioCtx) {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            }
-
-            if (!masterGainNode) {
-                masterGainNode = audioCtx.createGain();
-                const savedMasterVol = localStorage.getItem('gigstems_master_volume');
-                const initMasterVol = savedMasterVol !== null ? parseFloat(savedMasterVol) : 0.8;
-                masterGainNode.gain.setValueAtTime(isMasterMuted ? 0 : initMasterVol, audioCtx.currentTime);
-                masterGainNode.connect(audioCtx.destination);
-            }
-
-            audioBuffers = [];
-            trackNames = [];
-            gainNodes = [];
-            totalDuration = 0;
-            currentSongName = songName;
-
-            const query = `'${songFolderId}' in parents and trashed = false and (mimeType contains 'audio/' or name contains '.mp3' or name contains '.wav' or name contains '.m4a')`;
-            const url = `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(query)}&fields=files(id,name)&key=${GIGSTEMS_API_KEY}`;
-
-            try {
-                const response = await fetch(url);
-                if (!response.ok) throw new Error();
-                
-                const data = await response.json();
-                const files = data.files || [];
-
-                if (files.length === 0) {
-                    updateStatusText('statusNoFiles');
-                    alert(i18n[currentLang].statusNoFiles);
-                    return;
-                }
-
-                files.sort((a, b) => a.name.localeCompare(b.name));
-
-                for (let i = 0; i < files.length; i++) {
-                    const file = files[i];
-                    statusLabel.innerText = `${i18n[currentLang].statusDecoding} [${i + 1}/${files.length}]: ${file.name}...`;
-
-                    const fileUrl = `https://www.googleapis.com/drive/v3/files/${file.id}?alt=media&key=${GIGSTEMS_API_KEY}`;
-                    const fileResponse = await fetch(fileUrl);
-                    
-                    if (!fileResponse.ok) throw new Error();
-
-                    const arrayBuffer = await fileResponse.arrayBuffer();
-                    const decodedData = await audioCtx.decodeAudioData(arrayBuffer);
-                    
-                    audioBuffers.push(decodedData);
-                    
-                    let cleanName = file.name.replace(/\.[^/.]+$/, ""); 
-                    cleanName = cleanName.replace(/^\d+[\s_.-]*/, ""); 
-                    cleanName = cleanName.charAt(0).toUpperCase() + cleanName.slice(1);
-                    
-                    trackNames.push(cleanName);
-
-                    if (decodedData.duration > totalDuration) {
-                        totalDuration = decodedData.duration;
-                    }
-                }
-
-                updateStatusText('statusReady', files.length);
-                document.getElementById('totalTime').innerText = formatTime(totalDuration);
-                
-                const { data: presetData } = await supabaseClient
-                    .from('song_presets')
-                    .select('*')
-                    .eq('band_id', activeBandId)
-                    .eq('song_name', currentSongName)
-                    .single();
-
-                buildMixer(presetData);
-                
-                playBtn.disabled = false;
-                stopBtn.disabled = false;
-
-            } catch (err) {
-                updateStatusText('statusError');
-            }
-        }
-
-        // Iscrtavanje jednoredne miksete na bazi pristiglih Cloud preseta
-        function buildMixer(preset) {
-            const container = document.getElementById('mixerContainer');
-            container.innerHTML = '';
-
-            let savedMix = {};
-            let order = [...trackNames];
-
-            if (preset) {
-                savedMix = preset.mixer_state || {};
-                if (preset.track_order && preset.track_order.length > 0) {
-                    const sortedOrder = [];
-                    preset.track_order.forEach(name => {
-                        if (trackNames.includes(name)) sortedOrder.push(name);
-                    });
-                    trackNames.forEach(name => {
-                        if (!sortedOrder.includes(name)) sortedOrder.push(name);
-                    });
-                    order = sortedOrder;
-                }
-            }
-
-            const sortedBuffers = [];
-            order.forEach(name => {
-                const idx = trackNames.indexOf(name);
-                if (idx !== -1) {
-                    sortedBuffers.push(audioBuffers[idx]);
-                }
-            });
-            audioBuffers = sortedBuffers;
-            trackNames = order;
-
-            trackNames.forEach((name, index) => {
-                const trackPreset = savedMix[name] || { volume: 0.8, muted: false, solo: false };
-
-                const gainNode = audioCtx.createGain();
-                gainNode.gain.value = trackPreset.muted ? 0 : trackPreset.volume;
-                gainNodes.push(gainNode);
-
-                const strip = document.createElement('div');
-                strip.className = 'track-strip';
-                strip.id = `track-strip-${index}`;
-                
-                strip.setAttribute('draggable', 'true');
-                strip.addEventListener('dragstart', handleDragStart);
-                strip.addEventListener('dragover', handleDragOver);
-                strip.addEventListener('drop', handleDrop);
-                strip.addEventListener('dragend', handleDragEnd);
-
-                const muteClass = trackPreset.muted ? "btn-mute active" : "btn-mute";
-                const soloClass = trackPreset.solo ? "btn-solo active" : "btn-solo";
-
-                strip.innerHTML = `
-                    <span class="drag-handle" ontouchstart="handleTouchStart(event, ${index})">☰</span>
-                    <div class="track-name" title="${name}" style="font-weight: 300;">${name}</div>
-                    <div class="volume-slider-container">
-                        <input type="range" class="volume-slider" min="0" max="1" step="0.01" value="${trackPreset.volume}" oninput="setVolume(${index}, this.value)">
+                    <!-- Mikseta gde se dinamički iscrtavaju kanali učitane pesme -->
+                    <div id="tracksContainer" class="tracks-container">
+                        <!-- Kanali se crtaju dinamički iz JavaScript-a -->
                     </div>
-                    <button id="muteBtn-${index}" class="${muteClass}" onclick="toggleMute(${index})">M</button>
-                    <button id="soloBtn-${index}" class="${soloClass}" onclick="toggleSolo(${index})">S</button>
-                `;
-                container.appendChild(strip);
-            });
+                </div>
 
-            applyGainsFromUI();
-        }
+            </div>
 
-        // Sinhronizacija i slanje podešavanja u Supabase bazu u realnom vremenu
-        async function saveMixState() {
-            if (!currentSongName || !activeBandId) return;
+        </div>
 
-            const mixer_state = {};
-            trackNames.forEach((name, index) => {
-                const slider = document.querySelectorAll('.volume-slider')[index];
-                const isMuted = document.getElementById(`muteBtn-${index}`).classList.contains('active');
-                const isSolo = document.getElementById(`soloBtn-${index}`).classList.contains('active');
+    </div>
 
-                mixer_state[name] = {
-                    volume: slider ? parseFloat(slider.value) : 0.8,
-                    muted: isMuted,
-                    solo: isSolo
-                };
-            });
-
-            const track_order = [...trackNames];
-
-            const { error } = await supabaseClient
-                .from('song_presets')
-                .upsert({
-                    band_id: activeBandId,
-                    song_name: currentSongName,
-                    track_order,
-                    mixer_state,
-                    updated_at: new Date()
-                }, { onConflict: 'band_id,song_name' });
-
-            if (error) console.error("Greška pri sinhronizaciji sa bazom:", error);
-        }
-
-        // ==========================================================================
-        // 6. DRAG & DROP LOGIKA (Desktop & Touch Mobile)
-        // ==========================================================================
-
-        let dragSourceIdx = null;
-        let touchStartIdx = null;
-
-        function handleDragStart(e) {
-            dragSourceIdx = parseInt(this.id.split('-').pop());
-            this.classList.add('dragging');
-        }
-
-        function handleDragOver(e) {
-            e.preventDefault();
-        }
-
-        function handleDrop(e) {
-            e.preventDefault();
-            const targetIdx = parseInt(this.id.split('-').pop());
-            if (dragSourceIdx !== null && dragSourceIdx !== targetIdx) {
-                reorderTracks(dragSourceIdx, targetIdx);
-            }
-        }
-
-        function handleDragEnd() {
-            this.classList.remove('dragging');
-            dragSourceIdx = null;
-        }
-
-        let activeTouchElement = null;
-
-        function handleTouchStart(e, index) {
-            touchStartIdx = index;
-            activeTouchElement = document.getElementById(`track-strip-${index}`);
-            activeTouchElement.classList.add('dragging');
-        }
-
-        document.addEventListener('touchmove', (e) => {
-            if (activeTouchElement === null) return;
-            e.preventDefault();
+    <!-- PODEŠAVANJA MODAL (Sa 4 organizovana taba) -->
+    <div id="settingsModal" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalSettingsTitle" class="modal-title">⚙️ Podešavanja</h3>
+                <button class="modal-close-btn" onclick="closeSettingsModal()">×</button>
+            </div>
             
-            const touch = e.touches[0];
-            const elementUnder = document.elementFromPoint(touch.clientX, touch.clientY);
+            <!-- Tabovi podešavanja -->
+            <div class="modal-tabs">
+                <button id="tabBtnRegional" class="modal-tab active" onclick="switchSettingsTab('Regional')">Aplikacija</button>
+                <button id="tabBtnProfile" class="modal-tab" onclick="switchSettingsTab('Profile')">Profil</button>
+                <button id="tabBtnPassword" class="modal-tab" onclick="switchSettingsTab('Password')">Lozinka</button>
+                <button id="tabBtnAccount" class="modal-tab" onclick="switchSettingsTab('Account')">Nalog</button>
+            </div>
             
-            if (elementUnder) {
-                const closestStrip = elementUnder.closest('.track-strip');
-                if (closestStrip && closestStrip !== activeTouchElement) {
-                    const targetIdx = parseInt(closestStrip.id.split('-').pop());
-                    reorderTracks(touchStartIdx, targetIdx);
-                    touchStartIdx = targetIdx;
-                }
-            }
-        }, { passive: false });
-
-        document.addEventListener('touchend', () => {
-            if (activeTouchElement) {
-                activeTouchElement.classList.remove('dragging');
-                activeTouchElement = null;
-                touchStartIdx = null;
-                saveMixState();
-            }
-        });
-
-        function reorderTracks(from, to) {
-            const tempBuffer = audioBuffers[from];
-            const tempName = trackNames[from];
-            
-            audioBuffers.splice(from, 1);
-            trackNames.splice(from, 1);
-            
-            audioBuffers.splice(to, 0, tempBuffer);
-            trackNames.splice(to, 0, tempName);
-
-            const tempGain = gainNodes[from];
-            gainNodes.splice(from, 1);
-            gainNodes.splice(to, 0, tempGain);
-
-            const savedMix = {};
-            trackNames.forEach((name, index) => {
-                const slider = document.querySelectorAll('.volume-slider')[index];
-                const isMuted = document.getElementById(`muteBtn-${index}`).classList.contains('active');
-                const isSolo = document.getElementById(`soloBtn-${index}`).classList.contains('active');
-                savedMix[name] = {
-                    volume: slider ? parseFloat(slider.value) : 0.8,
-                    muted: isMuted,
-                    solo: isSolo
-                };
-            });
-
-            buildMixer({ mixer_state: savedMix });
-        }
-
-        // ==========================================================================
-        // 7. AUDIO ENGINE POMOĆNE METODE (Volume, Mute, Solo)
-        // ==========================================================================
-
-        function applyGainsFromUI() {
-            if (!audioCtx) return;
-
-            let isAnySoloActive = false;
-            trackNames.forEach((_, i) => {
-                const soloBtn = document.getElementById(`soloBtn-${i}`);
-                if (soloBtn && soloBtn.classList.contains('active')) {
-                    isAnySoloActive = true;
-                }
-            });
-
-            trackNames.forEach((_, i) => {
-                const slider = document.querySelectorAll('.volume-slider')[i];
-                const vol = slider ? parseFloat(slider.value) : 0.8;
-                const isMuted = document.getElementById(`muteBtn-${i}`).classList.contains('active');
-                const isSolo = document.getElementById(`soloBtn-${i}`).classList.contains('active');
-
-                let finalGain = vol;
-
-                if (isMuted) {
-                    finalGain = 0;
-                } else if (isAnySoloActive && !isSolo) {
-                    finalGain = 0;
-                }
-
-                if (gainNodes[i]) {
-                    gainNodes[i].gain.setValueAtTime(finalGain, audioCtx.currentTime);
-                }
-            });
-        }
-
-        function setVolume(index, value) {
-            applyGainsFromUI();
-            saveMixState();
-        }
-
-        function toggleMute(index) {
-            const btn = document.getElementById(`muteBtn-${index}`);
-            btn.classList.toggle('active');
-            applyGainsFromUI();
-            saveMixState();
-        }
-
-        function toggleSolo(index) {
-            const btn = document.getElementById(`soloBtn-${index}`);
-            btn.classList.toggle('active');
-            applyGainsFromUI();
-            saveMixState();
-        }
-
-        function setMasterVolume(value) {
-            localStorage.setItem('gigstems_master_volume', value);
-            if (!audioCtx || !masterGainNode) return;
-            
-            if (!isMasterMuted) {
-                masterGainNode.gain.setValueAtTime(value, audioCtx.currentTime);
-            }
-        }
-
-        function toggleMasterMute() {
-            if (!audioCtx || !masterGainNode) return;
-
-            const btn = document.getElementById('masterMuteBtn');
-            isMasterMuted = !isMasterMuted;
-
-            if (isMasterMuted) {
-                btn.classList.add('active');
-                masterGainNode.gain.setValueAtTime(0, audioCtx.currentTime);
-            } else {
-                btn.classList.remove('active');
-                const sliderVal = parseFloat(document.getElementById('masterVolumeSlider').value);
-                masterGainNode.gain.setValueAtTime(sliderVal, audioCtx.currentTime);
-            }
-        }
-
-        function togglePlay() {
-            if (audioCtx.state === 'suspended') {
-                audioCtx.resume();
-            }
-
-            if (isPlaying) {
-                pauseOffset += audioCtx.currentTime - startTime;
-                stopSourceNodes();
-                isPlaying = false;
-                updatePlayBtnUI();
-                clearInterval(timerInterval);
-            } else {
-                if (pauseOffset >= totalDuration) {
-                    pauseOffset = 0; 
-                }
-                startSourceNodes(pauseOffset);
-                startTime = audioCtx.currentTime;
-                isPlaying = true;
-                updatePlayBtnUI();
-                timerInterval = setInterval(updateUI, 100);
-            }
-        }
-
-        function startSourceNodes(offset) {
-            sourceNodes = [];
-            audioBuffers.forEach((buffer, index) => {
-                const source = audioCtx.createBufferSource();
-                source.buffer = buffer;
+            <div class="modal-body">
+                <!-- Tab 1: Regional / Aplikacija -->
+                <div id="settingsTabRegional" class="modal-tab-content">
+                    <div class="input-group">
+                        <label id="timeFormatLabel" class="input-label">Format vremena:</label>
+                        <select id="settingTimeFormat" class="settings-input" style="background-color: var(--bg-input);">
+                            <option value="24h">24h format (Npr. 21:15)</option>
+                            <option value="12h">12h format (Npr. 09:15 PM)</option>
+                        </select>
+                    </div>
+                    <div class="input-group" style="margin-top: 15px;">
+                        <label id="dateFormatLabel" class="input-label">Format datuma:</label>
+                        <select id="settingDateFormat" class="settings-input" style="background-color: var(--bg-input);">
+                            <option value="dd.mm.yyyy">dd.mm.yyyy (Npr. 19.08.2026)</option>
+                            <option value="mm/dd/yyyy">mm/dd/yyyy (Npr. 08/19/2026)</option>
+                        </select>
+                    </div>
+                    <div class="input-group" style="margin-top: 15px;">
+                        <label id="timezoneLabel" class="input-label">Vremenska zona:</label>
+                        <select id="settingTimezone" class="settings-input" style="background-color: var(--bg-input);">
+                            <option value="Europe/Belgrade">Europe/Belgrade (GMT+2)</option>
+                            <option value="UTC">UTC (GMT+0)</option>
+                        </select>
+                    </div>
+                    <div class="input-group" style="margin-top: 15px;">
+                        <label id="tempUnitLabel" class="input-label">Temperatura:</label>
+                        <select id="settingTempUnit" class="settings-input" style="background-color: var(--bg-input);">
+                            <option value="C">Celzijus (°C)</option>
+                            <option value="F">Farenhajt (°F)</option>
+                        </select>
+                    </div>
+                </div>
                 
-                source.connect(gainNodes[index]);
-                gainNodes[index].connect(masterGainNode);
+                <!-- Tab 2: Profile -->
+                <div id="settingsTabProfile" class="modal-tab-content" style="display: none;">
+                    <div style="display: flex; align-items: center; gap: 20px; margin-bottom: 20px;">
+                        <div class="user-avatar" id="settingsAvatarCircle" style="width: 65px; height: 65px; font-size: 1.8em;">M</div>
+                        <div>
+                            <button id="btnUploadAvatar" class="btn-secondary" onclick="triggerAvatarUpload()">Izaberi sliku</button>
+                            <input type="file" id="avatarFileInput" accept="image/*" style="display: none;" onchange="handleAvatarUpload(this)">
+                        </div>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label id="profileEmailLabel" class="input-label">Email adresa:</label>
+                        <input type="email" id="settingEmail" class="settings-input" readonly style="opacity: 0.6; cursor: not-allowed;">
+                    </div>
+                    <div class="input-group" style="margin-top: 15px;">
+                        <label id="profileNameLabel" class="input-label">Tvoje ime (muzičar):</label>
+                        <input type="text" id="settingDisplayName" class="settings-input">
+                    </div>
+                </div>
                 
-                if (offset < buffer.duration) {
-                    source.start(0, offset);
-                } else {
-                    source.start(0, buffer.duration);
-                }
-                sourceNodes.push(source);
-            });
-        }
-
-        function stopSourceNodes() {
-            sourceNodes.forEach(node => {
-                try { node.stop(); } catch(err) {}
-            });
-            sourceNodes = [];
-        }
-
-        function stopAudio() {
-            stopSourceNodes();
-            isPlaying = false;
-            pauseOffset = 0;
-            updatePlayBtnUI();
-            document.getElementById('currentTime').innerText = "00:00";
-            document.getElementById('seekBar').value = 0;
-            clearInterval(timerInterval);
-        }
-
-        function onSeek(value) {
-            const wasPlaying = isPlaying;
-            if (isPlaying) {
-                togglePlay(); 
-            }
-            pauseOffset = (value / 100) * totalDuration;
-            document.getElementById('currentTime').innerText = formatTime(pauseOffset);
+                <!-- Tab 3: Password -->
+                <div id="settingsTabPassword" class="modal-tab-content" style="display: none;">
+                    <div class="input-group">
+                        <label id="newPasswordLabel" class="input-label">Nova lozinka:</label>
+                        <input type="password" id="settingNewPassword" class="settings-input" placeholder="Najmanje 6 karaktera">
+                    </div>
+                </div>
+                
+                <!-- Tab 4: Account / Nalog -->
+                <div id="settingsTabAccount" class="modal-tab-content" style="display: none;">
+                    <p id="deleteAccountText" style="color: var(--text-secondary); line-height: 1.5; margin-bottom: 20px;">
+                        Brisanjem naloga trajno brišete sve svoje podatke, bendove u kojima ste osnivač i sačuvane mikseve.
+                    </p>
+                    <button id="btnDeleteAccount" class="btn-stop" onclick="deleteCurrentUserAccount()">Trajno obriši moj nalog</button>
+                </div>
+            </div>
             
-            if (wasPlaying) {
-                togglePlay(); 
-            }
-        }
+            <div class="modal-footer">
+                <button id="btnCancelSettings" class="btn-secondary" onclick="closeSettingsModal()">Otkaži</button>
+                <button id="btnSaveSettings" class="btn-connect" onclick="saveSettings()">Sačuvaj</button>
+            </div>
+        </div>
+    </div>
 
-        function updateUI() {
-            if (!isPlaying) return;
-            const elapsed = pauseOffset + (audioCtx.currentTime - startTime);
-            
-            if (elapsed >= totalDuration) {
-                stopAudio();
-                return;
-            }
-
-            document.getElementById('currentTime').innerText = formatTime(elapsed);
-            document.getElementById('seekBar').value = (elapsed / totalDuration) * 100;
-        }
-
-        function formatTime(seconds) {
-            const mins = Math.floor(seconds / 60).toString().padStart(2, '0');
-            const secs = Math.floor(seconds % 60).toString().padStart(2, '0');
-            return `${mins}:${secs}`;
-        }
-
-        function extractFolderId(urlOrId) {
-            const regExp = /[-\w]{25,}/;
-            const match = urlOrId.match(regExp);
-            return match ? match[0] : urlOrId;
-        }
-
-        function filterSongs(queryText) {
-            const query = queryText.toLowerCase().trim();
-            const filtered = allSongs.filter(song => song.name.toLowerCase().includes(query));
-            renderSongsList(filtered);
-        }
-
-        // ==========================================================================
-        // 8. POMOĆNE METODE ZA UI I LOKALIZACIJU (v1.4.04 Helper Functions)
-        // ==========================================================================
-
-        function updatePlayBtnUI() {
-            const playSpan = playBtn.querySelector('span');
-            if (isPlaying) {
-                playBtn.classList.add('active');
-                playSpan.innerText = i18n[currentLang].pauseBtn;
-            } else {
-                playBtn.classList.remove('active');
-                playSpan.innerText = i18n[currentLang].playBtn;
-            }
-        }
-
-        function updateStatusText(key, count = 0) {
-            let text = i18n[currentLang][key] || key;
-            if (count > 0) {
-                text = text.replace('{count}', count);
-            }
-            statusLabel.innerText = text;
-        }
-
-        function setLanguage(lang) {
-            currentLang = lang;
-            localStorage.setItem('gigstems_lang', lang);
-            
-            // #NOVO v1.4.05 - Ažuriranje dvojezičnosti na Auth / Login ekranu
-            document.getElementById('auth-lang-sr').classList.toggle('active', lang === 'sr');
-            document.getElementById('auth-lang-en').classList.toggle('active', lang === 'en');
-            
-            document.getElementById('authEmailLabel').innerText = i18n[lang].authEmail;
-            document.getElementById('authPasswordLabel').innerText = i18n[lang].authPassword;
-            document.getElementById('authDisplayNameLabel').innerText = i18n[lang].authDisplayName;
-            
-            // Verifikacioni ekran
-            document.getElementById('verificationTitle').innerText = i18n[lang].verificationTitle;
-            document.getElementById('verificationText').innerText = i18n[lang].verificationText;
-            document.getElementById('verificationCodeLabel').innerText = i18n[lang].verificationCodeLabel;
-            document.getElementById('verificationCodeInput').placeholder = i18n[lang].verificationCodePlaceholder;
-            document.getElementById('verificationSubmitBtn').innerText = i18n[lang].verificationSubmitBtn;
-            document.getElementById('verificationBackBtn').innerText = i18n[lang].verificationBackBtn;
-
-            // Ažuriranje HTML tekstova
-            document.getElementById('songsTitle').innerText = i18n[lang].songsTitle;
-            document.getElementById('searchInput').placeholder = i18n[lang].searchPlaceholder;
-            document.getElementById('playBtn').querySelector('span').innerText = isPlaying ? i18n[lang].pauseBtn : i18n[lang].playBtn;
-            document.getElementById('stopBtn').querySelector('span').innerText = i18n[lang].stopBtn;
-            document.getElementById('masterMuteBtn').innerText = isMasterMuted ? i18n[lang].masterMuteBtn : i18n[lang].masterMuteBtn;
-            document.getElementById('masterVolLabel').innerText = i18n[lang].masterVolLabel;
-            
-            document.getElementById('joinCodeTitle').innerText = i18n[lang].joinCodeTitle;
-            document.getElementById('joinCodeLabel').innerText = i18n[lang].joinCodeLabel;
-            document.getElementById('joinCodeInput').placeholder = i18n[lang].joinCodePlaceholder;
-            document.getElementById('joinCodeSubmitBtn').innerText = i18n[lang].joinCodeBtn;
-            
-            document.getElementById('addSectionTitle').innerText = i18n[lang].addSectionTitle;
-            document.getElementById('bandNameLabel').innerText = i18n[lang].bandNameLabel;
-            document.getElementById('bandUrlLabel').innerText = i18n[lang].bandUrlLabel;
-            document.getElementById('connectBtn').innerText = i18n[lang].connectBtn;
-
-            document.getElementById('sidebarBandsHeader').innerText = i18n[lang].navBands;
-
-            // Ako nismo učitali ništa
-            if (!currentSongName) {
-                updateStatusText('statusInit');
-            }
-
-            // Osveži kartice
-            renderBandsUI();
-            renderSidebarBands();
-            toggleAuthMode(); // Resetuje auth labela na ispravan jezik
-            isRegisterMode = !isRegisterMode; toggleAuthMode(); // trik za osvežavanje auth labela
-        }
-
-        window.onload = () => {
-            loadSavedSettings();
-            setLanguage(currentLang);
-        };
-    </script>
 </body>
 </html>
