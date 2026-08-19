@@ -4,7 +4,7 @@
 
 // Supabase konfiguracija baze podataka
 const SUPABASE_URL = "https://yqmxwgikcqibbkpqstux.supabase.co";
-const SUPABASE_ANON_KEY = "APISUPA"; // Biće automatski zamenjeno pravim ključem ili korisnik ubacuje svoj
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlxbXh3Z2lrY3FpYmJrcHFzdHV4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxNjEwNDksImV4cCI6MjEwMjczNzA0OX0.TVedwos2OOmvggCK-zyevtV6S2Vfdax9e9ygHhKr5nA"; // Biće automatski zamenjeno pravim ključem ili korisnik ubacuje svoj
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // Google API Key za očitavanje drajv linkova (Korisnik upisuje svoj na liniji ~143 pre starta)
