@@ -1,13 +1,13 @@
 /**
  * ==========================================================================
  * GIGSTEMS TRANSLATION DICTIONARY (translations.js)
- * v1.3.1 • Zaseban fajl sa prevodima radi lakšeg uređivanja i lokalizacije
+ * v1.3.2 • Zaseban fajl sa prevodima radi lakšeg uređivanja i lokalizacije
  * ==========================================================================
  */
 
 const i18n = {
     sr: {
-        subtitle: "v1.3.1 • Google Drive Repertoar",
+        subtitle: "v1.3.2 • Google Drive Repertoar",
         stopBtn: "Zaustavi",
         playBtn: "Pusti trake",
         pauseBtn: "Pauziraj",
@@ -28,17 +28,23 @@ const i18n = {
         searchPlaceholder: "🔍 Pretraži pesmu...",
         activeBandLabel: "Bend:",
         songsTitle: "📋 Spisak Pesama",
-        noBands: "Nema sačuvanih bendova.",
+        noBands: "Nema sačuvanih bendova. Dodaj novi iznad.",
         noSongs: "Nema pronađenih pesama.",
         deleteBandConfirm: "Da li ste sigurni da želite da obrišete ovaj bend?",
-        addBandBtn: "Novi bend",
+        addBandBtn: "Upravljaj",
         closeBtn: "Zatvori",
         statusConnecting: "Povezujem se sa drajvom...",
         statusConnected: "Uspešno povezan! Izaberi pesmu sa liste.",
-        statusConnError: "Greška pri povezivanju. Proveri API ključ i link foldera."
+        statusConnError: "Greška pri povezivanju. Proveri API ključ i link foldera.",
+        
+        // #NOVO v1.3.2 - Prevodi za rename sekciju i prazno stanje
+        renameBandLabel: "Preimenuj trenutni bend:",
+        renameBtn: "Sačuvaj naziv",
+        selectBandPlaceholder: "-- Izaberi bend --",
+        deleteBandBtnText: "Obriši trenutni bend"
     },
     en: {
-        subtitle: "v1.3.1 • Google Drive Repertoire",
+        subtitle: "v1.3.2 • Google Drive Repertoire",
         stopBtn: "Stop",
         playBtn: "Play tracks",
         pauseBtn: "Pause",
@@ -59,13 +65,19 @@ const i18n = {
         searchPlaceholder: "🔍 Search song...",
         activeBandLabel: "Band:",
         songsTitle: "📋 Song Repertoire",
-        noBands: "No saved bands.",
+        noBands: "No saved bands. Add a new one above.",
         noSongs: "No songs found.",
         deleteBandConfirm: "Are you sure you want to delete this band?",
-        addBandBtn: "New Band",
+        addBandBtn: "Manage",
         closeBtn: "Close",
         statusConnecting: "Connecting to drive...",
         statusConnected: "Successfully connected! Select a song from the list.",
-        statusConnError: "Connection error. Check API key and folder link."
+        statusConnError: "Connection error. Check API key and folder link.",
+        
+        // #NOVO v1.3.2 - English translations for rename and empty state
+        renameBandLabel: "Rename current band:",
+        renameBtn: "Save name",
+        selectBandPlaceholder: "-- Select band --",
+        deleteBandBtnText: "Delete current band"
     }
 };
