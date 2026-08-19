@@ -1,7 +1,7 @@
 /**
  * ==========================================================================
  * GIGSTEMS TRANSLATION DICTIONARY (translations.js)
- * v1.3.5 • Zaseban fajl sa prevodima radi lakšeg uređivanja i lokalizacije
+ * v1.3.6 • Zaseban fajl sa prevodima radi lakšeg uređivanja i lokalizacije
  * ==========================================================================
  */
 
