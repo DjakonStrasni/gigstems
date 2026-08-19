@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GigStems - Prototip v1.3.6</title>
+    <title>GigStems - Prototip v1.3.7</title>
     <!-- Poziv eksternog CSS-a radi očuvanja konzistentnosti dizajna -->
     <link rel="stylesheet" href="style.css">
     <!-- Eksterni fajl sa prevodima radi lakšeg uređivanja i lokalizacije -->
@@ -50,7 +50,7 @@
                         <button id="renameBtn" class="btn-connect" onclick="updateActiveBandSubmit()" style="margin-top: 8px;">Sačuvaj izmene</button>
                     </div>
 
-                    <!-- #NOVO v1.3.6 - Potpuno zasebna, izolovana sekcija za brisanje sa jasnim tekstom i upozorenjem -->
+                    <!-- Zasebna, izolovana sekcija za brisanje sa jasnim tekstom i upozorenjem -->
                     <div id="deleteBandSection" class="manager-section danger-zone">
                         <span id="deleteSectionTitle" class="manager-section-title">🗑️ Obriši Aktivni Bend</span>
                         <div id="deleteSectionText" class="danger-text">Da li sigurno želiš da obrišeš bend? Sve pesme i sačuvane jačine kanala će biti obrisane.</div>
@@ -95,7 +95,7 @@
             <div class="app-header">
                 <div>
                     <h1>GigStems</h1>
-                    <p id="subtitleText" class="subtitle">v1.3.6 • Repertoar i Menadžment</p>
+                    <p id="subtitleText" class="subtitle">v1.3.7 • Repertoar i Menadžment</p>
                 </div>
                 
                 <div style="display: flex; gap: 10px; align-items: center;">
@@ -150,11 +150,11 @@
 
     <script>
         // ==========================================================================
-        // GIGSTEMS AUDIO ENGINE & CONTROL LOGIC (v1.3.6)
+        // GIGSTEMS AUDIO ENGINE & CONTROL LOGIC (v1.3.7)
         // ==========================================================================
 
         // TVOJ BEZBEDNI API KLJUČ (Ograničen na tvoj GitHub Pages domen)
-        const GIGSTEMS_API_KEY = "AIzaSyBiq4QbYuCtVyy9_-dJTCTcCtPfwZc-Gu8";
+        const GIGSTEMS_API_KEY = "UPISI_OVDE_SVOJ_API_KLJUC";
 
         // Inicijalizacija Web Audio API-ja i globalnih promenljivih
         let audioCtx;
@@ -185,14 +185,14 @@
         const songsList = document.getElementById('songsList');
         const bandSelect = document.getElementById('bandSelect');
 
-        // #NOVO v1.3.6 - Počinjemo od nule (prazna baza!) i sve snimamo na gigstems_bands
+        // Učitavanje bendova sa gigstems_ bands ključa
         let bands = JSON.parse(localStorage.getItem('gigstems_bands')) || [];
         let activeBandId = localStorage.getItem('gigstems_active_band') || "";
 
-        // Ako u bazi nema bendova, sve se čisti. Ako ima, osiguravamo tačnu selekciju pomoću 0-tog indeksa (ispravljen bands.id bag!)
+        // Rešen problem sa učitavanjem kada je samo jedan bend u listi i ispravljen critical bug 'bands.id'
         if (bands.length > 0) {
             if (!activeBandId || !bands.some(b => b.id === activeBandId)) {
-                activeBandId = bands[0].id; // ISPRAVLJENO! bands[0].id umesto nepostojećeg bands.id
+                activeBandId = bands[0].id; // ISPRAVLJENO! bands[0].id
                 localStorage.setItem('gigstems_active_band', activeBandId);
             }
         } else {
@@ -281,7 +281,7 @@
         function renderBandsUI() {
             bandSelect.innerHTML = "";
             
-            // #NOVO v1.3.6 - Podrška za "-- Bez benda --" opciju i potpuno sakrivanje uredi/obriši sekcija kada nema bendova
+            // Podrška za "-- Bez benda --" opciju i potpuno sakrivanje uredi/obriši sekcija kada nema bendova
             if (bands.length === 0) {
                 const opt = document.createElement('option');
                 opt.value = "";
@@ -315,7 +315,7 @@
                     document.getElementById('renameBandNameInput').value = activeBand.name;
                     document.getElementById('renameBandUrlInput').value = activeBand.rawUrl || "";
                     
-                    // #NOVO v1.3.6 - Dinamičko ubacivanje naziva benda u sekciju za brisanje
+                    // Dinamičko ubacivanje naziva benda u sekciju za brisanje
                     const deleteMsg = i18n[currentLang].deleteSectionText.replace("{name}", activeBand.name);
                     document.getElementById('deleteSectionText').innerText = deleteMsg;
                     document.getElementById('deleteBandBtn').innerText = i18n[currentLang].deleteBandBtnText.replace("{name}", activeBand.name);
@@ -431,7 +431,7 @@
             }
         }
 
-        // #NOVO v1.3.6 - Brisanje bendova sa prebacivanjem na 0-ti indeks i potpunim uklanjanjem bands.id baga
+        // Brisanje bendova sa prebacivanjem na ispravan nulti indeks i brisanjem lokalnih tragova
         function deleteActiveBand() {
             if (bands.length === 0) return;
 
@@ -444,7 +444,7 @@
             bands = bands.filter(b => b.id !== activeBandId);
             localStorage.setItem('gigstems_bands', JSON.stringify(bands));
 
-            // Pravilno ažuriramo sledeći aktivni ID koristeći 0-ti indeks (rešen bands.id bug!)
+            // Pravilno ažuriramo sledeći aktivni ID koristeći prvi preostali element (rešen bands.id bug!)
             if (bands.length > 0) {
                 activeBandId = bands[0].id; 
             } else {
@@ -476,13 +476,31 @@
             loadSongsFromActiveBand();
         }
 
+        // #NOVO v1.3.7 - Potpuno čišćenje audio stanja i kontrola kada se obriše aktivni bend
+        function resetAudioState() {
+            stopAudio();
+            audioBuffers = [];
+            trackNames = [];
+            gainNodes = [];
+            totalDuration = 0;
+            currentSongName = "";
+            
+            // Onemogućavamo gumbe i čistimo miksetu
+            playBtn.disabled = true;
+            stopBtn.disabled = true;
+            document.getElementById('mixerContainer').innerHTML = "";
+            document.getElementById('currentTime').innerText = "00:00";
+            document.getElementById('totalTime').innerText = "00:00";
+            document.getElementById('seekBar').value = 0;
+            updateStatusText('statusInit');
+        }
+
         // Povezivanje na drajv aktivnog benda i osvežavanje repertoara
         async function loadSongsFromActiveBand() {
             // Potpuno rešeno prazno stanje i prekidanje API pretraga kada nema selektovanog drajva
             if (bands.length === 0 || !activeBandId) {
                 songsList.innerHTML = `<div style="padding:15px; text-align:center; color:#94a3b8;">${i18n[currentLang].noBands}</div>`;
-                document.getElementById('mixerContainer').innerHTML = "";
-                updateStatusText('statusInit');
+                resetAudioState();
                 return;
             }
 
@@ -649,7 +667,7 @@
             }
         }
 
-        // Dinamičko kreiranje miksete na ekranu na osnovu učitanih traka
+        // #NOVO v1.3.7 - Dinamičko kreiranje miksete sa horizontalnim trakama (jedna ispod druge) i učitavanjem sačuvanog Drag & Drop redosleda
         function buildMixer() {
             const container = document.getElementById('mixerContainer');
             container.innerHTML = '';
@@ -666,20 +684,52 @@
                 }
             }
 
-            trackNames.forEach((name, index) => {
+            // Učitavanje sačuvanog redosleda traka za ovu pesmu
+            let savedOrder = [];
+            if (currentSongName) {
+                const rawOrder = localStorage.getItem('gigstems_order_' + currentSongName);
+                if (rawOrder) {
+                    try {
+                        savedOrder = JSON.parse(rawOrder);
+                    } catch (e) {
+                        console.error("Greška pri čitanju sačuvanog redosleda:", e);
+                    }
+                }
+            }
+
+            // Generišemo indekse prema sačuvanom redosledu ili podrazumevano
+            let orderIndices = trackNames.map((_, i) => i);
+            if (savedOrder && savedOrder.length > 0) {
+                orderIndices.sort((a, b) => {
+                    const nameA = trackNames[a];
+                    const nameB = trackNames[b];
+                    const indexA = savedOrder.indexOf(nameA);
+                    const indexB = savedOrder.indexOf(nameB);
+                    const posA = indexA === -1 ? 999 : indexA;
+                    const posB = indexB === -1 ? 999 : indexB;
+                    return posA - posB;
+                });
+            }
+
+            // Iscrtavamo horizontalne trake poređane jedna ispod druge
+            orderIndices.forEach((index) => {
+                const name = trackNames[index];
                 const trackPreset = savedMix[name] || { volume: 0.8, muted: false, solo: false };
 
                 const gainNode = audioCtx.createGain();
                 gainNode.gain.value = trackPreset.muted ? 0 : trackPreset.volume;
-                gainNodes.push(gainNode);
+                gainNodes[index] = gainNode;
 
                 const strip = document.createElement('div');
                 strip.className = 'track-strip';
+                strip.setAttribute('draggable', 'true');
+                strip.setAttribute('data-index', index);
 
                 const muteClass = trackPreset.muted ? "btn-mute active" : "btn-mute";
                 const soloClass = trackPreset.solo ? "btn-solo active" : "btn-solo";
 
                 strip.innerHTML = `
+                    <div class="drag-handle" title="Prevucite da promenite redosled">☰</div>
                     <div class="track-name" title="${name}">${name}</div>
                     <div class="volume-slider-container">
                         <input type="range" class="track-volume-slider" min="0" max="1" step="0.01" value="${trackPreset.volume}" oninput="setVolume(${index}, this.value)">
@@ -691,6 +741,68 @@
             });
 
             applyGainsFromUI();
+            makeMixerSortable();
+        }
+
+        // #NOVO v1.3.7 - Drag and Drop logika za sortiranje traka na mikseti
+        function makeMixerSortable() {
+            const container = document.getElementById('mixerContainer');
+            const strips = container.querySelectorAll('.track-strip');
+            
+            strips.forEach(strip => {
+                strip.addEventListener('dragstart', (e) => {
+                    e.dataTransfer.setData('text/plain', strip.getAttribute('data-index'));
+                    strip.classList.add('dragging');
+                });
+                
+                strip.addEventListener('dragend', () => {
+                    strip.classList.remove('dragging');
+                    saveTrackOrder(); // Sačuvaj novi redosled u memoriju pretraživača
+                });
+            });
+            
+            container.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                const draggingElement = container.querySelector('.dragging');
+                if (!draggingElement) return;
+                
+                const afterElement = getDragAfterElement(container, e.clientY);
+                if (afterElement == null) {
+                    container.appendChild(draggingElement);
+                } else {
+                    container.insertBefore(draggingElement, afterElement);
+                }
+            });
+        }
+
+        // Pomoćna funkcija za pronalazak elementa ispod kursora tokom prevlačenja
+        function getDragAfterElement(container, y) {
+            const draggableElements = [...container.querySelectorAll('.track-strip:not(.dragging)')];
+            
+            return draggableElements.reduce((closest, child) => {
+                const box = child.getBoundingClientRect();
+                const offset = y - box.top - box.height / 2;
+                if (offset < 0 && offset > closest.offset) {
+                    return { offset: offset, element: child };
+                } else {
+                    return closest;
+                }
+            }, { offset: Number.NEGATIVE_INFINITY }).element;
+        }
+
+        // #NOVO v1.3.7 - Čuvanje novog Drag & Drop redosleda traka u LocalStorage
+        function saveTrackOrder() {
+            if (!currentSongName) return;
+            const container = document.getElementById('mixerContainer');
+            const strips = container.querySelectorAll('.track-strip');
+            const order = [];
+            
+            strips.forEach(strip => {
+                const index = parseInt(strip.getAttribute('data-index'));
+                order.push(trackNames[index]);
+            });
+            
+            localStorage.setItem('gigstems_order_' + currentSongName, JSON.stringify(order));
         }
 
         // Centralni algoritam za izračunavanje i primenu Gain vrednosti
@@ -708,8 +820,12 @@
             trackNames.forEach((_, i) => {
                 const slider = document.querySelectorAll('.track-volume-slider')[i];
                 const vol = slider ? parseFloat(slider.value) : 0.8;
-                const isMuted = document.getElementById(`muteBtn-${i}`).classList.contains('active');
-                const isSolo = document.getElementById(`soloBtn-${i}`).classList.contains('active');
+                
+                const muteBtn = document.getElementById(`muteBtn-${i}`);
+                const soloBtn = document.getElementById(`soloBtn-${i}`);
+                
+                const isMuted = muteBtn ? muteBtn.classList.contains('active') : false;
+                const isSolo = soloBtn ? soloBtn.classList.contains('active') : false;
 
                 let finalGain = vol;
 
@@ -731,8 +847,12 @@
             const mixState = {};
             trackNames.forEach((name, index) => {
                 const slider = document.querySelectorAll('.track-volume-slider')[index];
-                const isMuted = document.getElementById(`muteBtn-${index}`).classList.contains('active');
-                const isSolo = document.getElementById(`soloBtn-${index}`).classList.contains('active');
+                
+                const muteBtn = document.getElementById(`muteBtn-${index}`);
+                const soloBtn = document.getElementById(`soloBtn-${index}`);
+                
+                const isMuted = muteBtn ? muteBtn.classList.contains('active') : false;
+                const isSolo = soloBtn ? soloBtn.classList.contains('active') : false;
 
                 mixState[name] = {
                     volume: slider ? parseFloat(slider.value) : 0.8,
@@ -751,14 +871,14 @@
 
         function toggleMute(index) {
             const btn = document.getElementById(`muteBtn-${index}`);
-            btn.classList.toggle('active');
+            if (btn) btn.classList.toggle('active');
             applyGainsFromUI();
             saveMixState();
         }
 
         function toggleSolo(index) {
             const btn = document.getElementById(`soloBtn-${index}`);
-            btn.classList.toggle('active');
+            if (btn) btn.classList.toggle('active');
             applyGainsFromUI();
             saveMixState();
         }
