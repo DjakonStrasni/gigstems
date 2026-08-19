@@ -1,4 +1,845 @@
 /* ==========================================================================
+   GIGSTEMS CSS STYLING - VERZIJA 1.4.01
+   ========================================================================== */
+
+/* Osnovna resetovanja i mračna tema */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background-color: #0f172a;
+    color: #f8fafc;
+    height: 100vh;
+    overflow: hidden;
+}
+
+/* Kontejner aplikacije - Troslojni raspored (SPA layout) */
+.app-container {
+    display: flex;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+}
+
+/* ==========================================================================
+   KOLONA 1: Glavni Sidebar (Navigacija, Bendovi, Korisnički Profil)
+   ========================================================================== */
+.sidebar {
+    width: 230px;
+    background-color: #1e293b;
+    border-right: 1px solid #334155;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: 100%;
+    z-index: 100;
+    transition: transform 0.3s ease;
+    flex-shrink: 0;
+}
+
+.sidebar-header {
+    padding: 20px;
+    border-bottom: 1px solid #334155;
+    text-align: center;
+}
+
+.sidebar-logo {
+    font-size: 1.5em;
+    font-weight: 800;
+    color: #38bdf8;
+    letter-spacing: 1px;
+}
+
+.sidebar-divider {
+    height: 1px;
+    background-color: #334155;
+    margin: 10px 0;
+}
+
+/* Navigacioni meni */
+.nav-menu {
+    flex-grow: 1;
+    padding: 15px 10px;
+    overflow-y: auto;
+}
+
+.nav-item {
+    display: block;
+    width: 100%;
+    padding: 12px 15px;
+    background: transparent;
+    border: none;
+    border-radius: 8px;
+    color: #94a3b8;
+    font-size: 0.95em;
+    font-weight: 600;
+    text-align: left;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-bottom: 5px;
+    text-decoration: none;
+}
+
+.nav-item:hover, .nav-item.active {
+    background-color: #334155;
+    color: #f8fafc;
+}
+
+.nav-item.active {
+    border-left: 4px solid #38bdf8;
+    padding-left: 11px;
+}
+
+/* Podmeni za sekcije unutar aktivnog benda */
+.nav-sub-menu {
+    margin-left: 15px;
+    margin-bottom: 10px;
+    border-left: 1px dashed #475569;
+    padding-left: 10px;
+}
+
+.nav-sub-item {
+    display: block;
+    width: 100%;
+    padding: 8px 12px;
+    background: transparent;
+    border: none;
+    color: #64748b;
+    font-size: 0.85em;
+    text-align: left;
+    cursor: pointer;
+    border-radius: 4px;
+    margin-bottom: 2px;
+}
+
+.nav-sub-item:hover, .nav-sub-item.active {
+    color: #38bdf8;
+    background-color: #1e293b;
+}
+
+/* Donji deo sidebara (Profil & Prijava) */
+.sidebar-footer {
+    padding: 15px;
+    border-top: 1px solid #334155;
+    background-color: #0f172a;
+}
+
+.user-badge {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    font-size: 0.85em;
+    color: #94a3b8;
+}
+
+.user-name {
+    font-weight: bold;
+    color: #38bdf8;
+}
+
+.btn-logout {
+    margin-top: 10px;
+    width: 100%;
+    padding: 6px 12px;
+    background-color: #ef4444;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    font-weight: bold;
+    cursor: pointer;
+    font-size: 0.8em;
+}
+
+.btn-logout:hover {
+    background-color: #dc2626;
+}
+
+/* ==========================================================================
+   KOLONA 2: Repertoar / Lista Pesama (Središnji sloj)
+   ========================================================================== */
+.repertoire-column {
+    width: 280px;
+    background-color: #0f172a;
+    border-right: 1px solid #334155;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    flex-shrink: 0;
+    transition: transform 0.3s ease;
+    z-index: 90;
+}
+
+.search-container {
+    padding: 15px;
+    border-bottom: 1px solid #334155;
+}
+
+.search-input {
+    width: 100%;
+    padding: 10px 15px;
+    background-color: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    color: #f8fafc;
+    outline: none;
+    font-size: 0.9em;
+}
+
+.search-input:focus {
+    border-color: #38bdf8;
+}
+
+.songs-title-container {
+    padding: 15px 15px 5px 15px;
+}
+
+.songs-title {
+    font-size: 0.85em;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #64748b;
+    font-weight: bold;
+}
+
+.songs-list {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding: 10px 15px;
+}
+
+.song-item {
+    padding: 12px 15px;
+    background-color: #1e293b;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 0.9em;
+    font-weight: 500;
+}
+
+.song-item:hover {
+    background-color: #334155;
+    transform: translateX(3px);
+}
+
+.song-item.active {
+    background-color: #38bdf8;
+    color: #0f172a;
+    font-weight: bold;
+}
+
+/* ==========================================================================
+   KOLONA 3: Glavni Radni Prostor (Plejer, Mikseta, Ekran)
+   ========================================================================== */
+.main-content {
+    flex-grow: 1;
+    height: 100%;
+    overflow-y: auto;
+    background-color: #0b0f19;
+    padding: 30px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+/* Ograničavamo širinu centralnog dela radi prevencije razvlačenja */
+.workspace-wrapper {
+    width: 100%;
+    max-width: 800px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* Zaglavlje radnog dela */
+.app-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #1e293b;
+    padding-bottom: 15px;
+    width: 100%;
+}
+
+.app-header h1 {
+    font-size: 1.8em;
+    font-weight: 800;
+}
+
+.subtitle {
+    font-size: 0.85em;
+    color: #64748b;
+    margin-top: 2px;
+}
+
+/* ==========================================================================
+   KONTROLE PLEJERA (Controls)
+   ========================================================================== */
+.controls-master {
+    background: #1e293b;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    width: 100%;
+}
+
+.buttons-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+button.btn-play, button.btn-stop {
+    border: none;
+    border-radius: 8px;
+    padding: 12px;
+    font-weight: 800;
+    cursor: pointer;
+    font-size: 1em;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+button.btn-play {
+    background-color: #10b981;
+    color: #0f172a;
+}
+
+button.btn-play:hover:not(:disabled) {
+    background-color: #059669;
+}
+
+button.btn-stop {
+    background-color: #ef4444;
+    color: #fff;
+}
+
+button.btn-stop:hover:not(:disabled) {
+    background-color: #dc2626;
+}
+
+button:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+/* Master jačina zvuka */
+.master-volume-container {
+    display: flex;
+    align-items: center;
+    background-color: #0f172a;
+    padding: 10px 15px;
+    border-radius: 8px;
+}
+
+.btn-mute {
+    background-color: #334155;
+    color: #94a3b8;
+    border: none;
+    border-radius: 6px;
+    font-weight: bold;
+    cursor: pointer;
+    font-size: 0.8em;
+    padding: 6px 12px;
+    transition: all 0.2s ease;
+}
+
+.btn-mute.active {
+    background-color: #ef4444;
+    color: #fff;
+}
+
+.master-vol-label {
+    font-size: 0.8em;
+    font-weight: bold;
+    color: #94a3b8;
+}
+
+/* Klizač za traženje (Seek Bar) */
+.seekbar-container {
+    width: 100%;
+}
+
+.seekbar {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 6px;
+    background: #334155;
+    border-radius: 3px;
+    outline: none;
+    cursor: pointer;
+}
+
+.seekbar::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 16px;
+    height: 16px;
+    background: #38bdf8;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: transform 0.1s ease;
+}
+
+.seekbar::-webkit-slider-thumb:hover {
+    transform: scale(1.2);
+}
+
+.time-container {
+    display: flex;
+    justify-content: space-between;
+    font-family: monospace;
+    font-size: 0.85em;
+    color: #94a3b8;
+    margin-top: 6px;
+}
+
+/* Statusna traka */
+.status-box {
+    background-color: #1e293b;
+    border-left: 4px solid #38bdf8;
+    padding: 12px 15px;
+    border-radius: 8px;
+    font-size: 0.85em;
+    color: #cbd5e1;
+    width: 100%;
+}
+
+/* ==========================================================================
+   MIKSETA (COMPACT SINGLE-ROW DESIGN)
+   ========================================================================== */
+.mixer {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+    margin-top: 10px;
+}
+
+.track-strip {
+    display: flex;
+    align-items: center;
+    background-color: #1e293b;
+    border-radius: 8px;
+    padding: 10px 15px;
+    gap: 12px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* Drag & Drop vizuelni stilovi */
+.track-strip.dragging {
+    opacity: 0.5;
+    background-color: #334155;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+}
+
+.drag-handle {
+    cursor: grab;
+    font-size: 1.2em;
+    color: #475569;
+    user-select: none;
+    padding: 0 5px;
+}
+
+.drag-handle:active {
+    cursor: grabbing;
+}
+
+.track-name {
+    width: 140px;
+    font-size: 0.9em;
+    font-weight: bold;
+    color: #cbd5e1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.volume-slider-container {
+    flex-grow: 1;
+    display: flex;
+    align-items: center;
+}
+
+.volume-slider {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 4px;
+    background: #334155;
+    border-radius: 2px;
+    outline: none;
+    cursor: pointer;
+}
+
+.volume-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px;
+    height: 140px;
+    height: 14px;
+    background: #10b981;
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+.btn-solo {
+    background-color: #334155;
+    color: #94a3b8;
+    border: none;
+    border-radius: 6px;
+    font-weight: bold;
+    cursor: pointer;
+    font-size: 0.8em;
+    padding: 6px 12px;
+    transition: all 0.2s ease;
+}
+
+.btn-solo.active {
+    background-color: #eab308;
+    color: #0f172a;
+}
+
+/* ==========================================================================
+   PANEL ZA UPRAVLJANJE BENDOVIMA (Uredi / Dodaj)
+   ========================================================================== */
+.band-manager-panel {
+    background-color: #1e293b;
+    border-radius: 12px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    width: 100%;
+}
+
+.manager-section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.manager-section-title {
+    font-size: 1.1em;
+    font-weight: bold;
+    color: #38bdf8;
+    border-bottom: 1px solid #334155;
+    padding-bottom: 5px;
+}
+
+.input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.input-label {
+    font-size: 0.8em;
+    font-weight: bold;
+    color: #94a3b8;
+}
+
+.settings-input {
+    width: 100%;
+    padding: 8px 12px;
+    background-color: #0f172a;
+    border: 1px solid #334155;
+    border-radius: 6px;
+    color: #f8fafc;
+    outline: none;
+    font-size: 0.9em;
+}
+
+.settings-input:focus {
+    border-color: #38bdf8;
+}
+
+.btn-connect {
+    background-color: #38bdf8;
+    color: #0f172a;
+    border: none;
+    border-radius: 6px;
+    padding: 10px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-connect:hover {
+    background-color: #0ea5e9;
+}
+
+/* Crvena Danger Zone za brisanje */
+.danger-zone {
+    border: 1px solid #ef4444;
+    border-radius: 8px;
+    padding: 15px;
+    background-color: rgba(239, 68, 68, 0.05);
+}
+
+.danger-text {
+    font-size: 0.85em;
+    color: #fca5a5;
+}
+
+.btn-delete-band {
+    background-color: #ef4444;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 10px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-delete-band:hover {
+    background-color: #dc2626;
+}
+
+/* ==========================================================================
+   BANDS VIEW (Kartice po uzoru na giglist.no)
+   ========================================================================== */
+.bands-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 15px;
+    width: 100%;
+}
+
+.band-card {
+    background-color: #1e293b;
+    border-radius: 12px;
+    border: 1px solid #334155;
+    display: flex;
+    overflow: hidden;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.band-card-logo-zone {
+    width: 140px;
+    background-color: #0f172a;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-right: 1px solid #334155;
+    padding: 15px;
+    color: #475569;
+}
+
+.band-card-logo-placeholder {
+    font-size: 2em;
+    margin-bottom: 5px;
+}
+
+.band-card-info-zone {
+    flex-grow: 1;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.band-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.band-card-name {
+    font-size: 1.3em;
+    font-weight: bold;
+    color: #f8fafc;
+}
+
+.band-role-badge {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.75em;
+    font-weight: bold;
+}
+
+.band-role-badge.admin {
+    background-color: rgba(234, 179, 8, 0.15);
+    color: #eab308;
+    border: 1px solid #eab308;
+}
+
+.band-role-badge.user {
+    background-color: rgba(148, 163, 184, 0.15);
+    color: #94a3b8;
+    border: 1px solid #94a3b8;
+}
+
+/* Akciona dugmad na kartici benda (Giglist stil) */
+.band-card-actions {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.btn-band-action {
+    background-color: #334155;
+    color: #f8fafc;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 10px;
+    font-size: 0.8em;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+}
+
+.btn-band-action:hover {
+    background-color: #475569;
+    color: #38bdf8;
+}
+
+/* ==========================================================================
+   AUTH PANELS (Login / Register)
+   ========================================================================== */
+.auth-wrapper {
+    width: 100%;
+    max-width: 400px;
+    background-color: #1e293b;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+    margin: 50px auto;
+}
+
+.auth-title {
+    font-size: 1.5em;
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 20px;
+    color: #38bdf8;
+}
+
+.auth-switch-link {
+    text-align: center;
+    font-size: 0.85em;
+    color: #38bdf8;
+    cursor: pointer;
+    margin-top: 15px;
+    text-decoration: underline;
+}
+
+/* ==========================================================================
+   MOBILNA RESPONSIVE LOGIKA & HAMBURGER MENI
+   ========================================================================== */
+.mobile-header-bar {
+    display: none;
+}
+
+.mobile-toggle-btn {
+    display: none;
+}
+
+@media (max-width: 768px) {
+    /* Skrivamo standardni troslojni raspored i uvodimo preklopne fioke (drawers) */
+    .sidebar {
+        position: fixed;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        transform: translateX(-100%);
+        z-index: 200;
+        box-shadow: 5px 0 25px rgba(0,0,0,0.5);
+    }
+
+    .sidebar.open {
+        transform: translateX(0);
+    }
+
+    .repertoire-column {
+        position: fixed;
+        right: 0;
+        top: 0;
+        bottom: 0;
+        transform: translateX(100%);
+        z-index: 190;
+        box-shadow: -5px 0 25px rgba(0,0,0,0.5);
+        width: 100%;
+        max-width: 300px;
+    }
+
+    .repertoire-column.open {
+        transform: translateX(0);
+    }
+
+    /* Zatamnjenje za zatvaranje menija dodirom */
+    .sidebar-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.6);
+        z-index: 150;
+    }
+
+    .sidebar-overlay.open {
+        display: block;
+    }
+
+    /* Dugmad za otvaranje panela na vrhu mobilnog ekrana */
+    .mobile-toggle-btn {
+        display: inline-block;
+        background-color: #334155;
+        border: none;
+        color: #f8fafc;
+        border-radius: 6px;
+        padding: 6px 12px;
+        font-weight: bold;
+        font-size: 0.85em;
+        cursor: pointer;
+    }
+
+    /* Smanjivanje dugmića miksete na mobilnom: samo jedno slovo M i S */
+    .track-strip {
+        padding: 8px 10px;
+        gap: 8px;
+    }
+
+    .track-name {
+        width: 90px;
+        font-size: 0.8em;
+    }
+
+    .btn-mute, .btn-solo {
+        padding: 6px 8px;
+        font-size: 0.75em;
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+    }
+
+    /* Kroz CSS sakrivamo tekst dugmeta na mobilnom i ostavljamo samo prvo slovo */
+    .btn-mute::after {
+        content: "";
+    }
+    
+    .workspace-wrapper {
+        padding: 10px;
+    }
+}
+/* ==========================================================================
    GIGSTEMS CSS STYLING - VERZIJA 1.4.0
    ========================================================================== */
 
