@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GigStems - Prototip v1.3.1</title>
+    <title>GigStems - Prototip v1.3.2</title>
     <!-- Poziv eksternog CSS-a radi očuvanja konzistentnosti dizajna -->
     <link rel="stylesheet" href="style.css">
     <!-- Eksterni fajl sa prevodima radi lakšeg uređivanja i lokalizacije -->
@@ -27,21 +27,33 @@
                     <select id="bandSelect" class="band-select" onchange="onBandChanged(this.value)">
                         <!-- Popunjava se dinamički iz localStorage-a -->
                     </select>
-                    <button id="addBandBtn" class="btn-add-band" onclick="toggleAddBandPanel()">+ Novi</button>
+                    <button id="addBandBtn" class="btn-add-band" onclick="toggleAddBandPanel()">Upravljaj</button>
                 </div>
 
-                <!-- Sklopiva forma za dodavanje novog benda sa pametnim unosem celog linka -->
+                <!-- #NOVO v1.3.2 - Redizajnirani panel za upravljanje bendovima sa dodatom sekcijom za preimenovanje -->
                 <div id="addBandPanel" class="band-manager-panel" style="display: none;">
-                    <div class="input-group">
+                    
+                    <!-- Sekcija za preimenovanje - prikazuje se samo ako postoji izabrani bend -->
+                    <div id="renameBandSection" class="input-group">
+                        <label id="renameBandLabel" class="input-label" for="renameBandNameInput">Preimenuj trenutni bend:</label>
+                        <div style="display: flex; gap: 5px;">
+                            <input type="text" id="renameBandNameInput" class="settings-input" placeholder="Novi naziv">
+                            <button id="renameBtn" class="btn-connect" onclick="renameActiveBandSubmit()" style="width: auto; white-space: nowrap; padding: 0 10px;">Sačuvaj</button>
+                        </div>
+                    </div>
+
+                    <div class="input-group" style="margin-top: 5px; border-top: 1px dashed #334155; padding-top: 8px;">
                         <label id="bandNameLabel" class="input-label" for="newBandName">Naziv benda:</label>
-                        <input type="text" id="newBandName" class="settings-input" placeholder="Npr. Bendover">
+                        <input type="text" id="newBandName" class="settings-input" placeholder="Npr. Deep Purple">
                     </div>
                     <div class="input-group" style="margin-top: 5px;">
                         <label id="bandUrlLabel" class="input-label" for="newBandUrl">Google Drive Link Foldera:</label>
                         <input type="text" id="newBandUrl" class="settings-input" placeholder="Nalepi ceo URL drajv foldera">
                     </div>
                     <button id="connectBtn" class="btn-connect" onclick="addNewBandSubmit()" style="margin-top: 8px;">Dodaj bend</button>
-                    <button id="deleteBandBtn" class="btn-delete-band" onclick="deleteActiveBand()" style="margin-top: 5px; background: #ef4444; color: white;">Obriši trenutni bend</button>
+                    
+                    <!-- Brisanje - prikazuje se samo ako postoji aktivni bend -->
+                    <button id="deleteBandBtn" class="btn-delete-band" onclick="deleteActiveBand()">Obriši trenutni bend</button>
                 </div>
             </div>
 
@@ -66,7 +78,7 @@
             <div class="app-header">
                 <div>
                     <h1>GigStems</h1>
-                    <p id="subtitleText" class="subtitle">v1.3.1 • Google Drive Repertoar</p>
+                    <p id="subtitleText" class="subtitle">v1.3.2 • Google Drive Repertoar</p>
                 </div>
                 
                 <div style="display: flex; gap: 10px; align-items: center;">
@@ -121,7 +133,7 @@
 
     <script>
         // ==========================================================================
-        // GIGSTEMS AUDIO ENGINE & CONTROL LOGIC (v1.3.1)
+        // GIGSTEMS AUDIO ENGINE & CONTROL LOGIC (v1.3.2)
         // ==========================================================================
 
         // TVOJ BEZBEDNI API KLJUČ (Ograničen na tvoj GitHub Pages domen)
@@ -157,16 +169,21 @@
         const songsList = document.getElementById('songsList');
         const bandSelect = document.getElementById('bandSelect');
 
-        // Inicijalizacija liste bendova sa uključenom default testnom bazom ("Fankomatik Test")
-        const defaultBands = [
-            { id: 'default_fankomatik', name: 'Fankomatik Test', folderId: '1uUxKmjU6MgmsLCk5jSUrA29m4SkkShGA' }
-        ];
+        // #NOVO v1.3.2 - Omogućavamo da korisnik nema nijedan bend. Podrazumevani se pravi samo na prvom pokretanju aplikacije ikada.
+        let isFirstRun = localStorage.getItem('gigstems_first_run') === null;
         let bands = JSON.parse(localStorage.getItem('gigstems_bands'));
-        if (!bands || bands.length === 0) {
-            bands = defaultBands;
+        
+        if (isFirstRun && (!bands || bands.length === 0)) {
+            bands = [
+                { id: 'default_fankomatik', name: 'Fankomatik', folderId: '1uUxKmjU6MgmsLCk5jSUrA29m4SkkShGA' }
+            ];
             localStorage.setItem('gigstems_bands', JSON.stringify(bands));
+            localStorage.setItem('gigstems_first_run', 'false');
+        } else if (!bands) {
+            bands = [];
         }
-        let activeBandId = localStorage.getItem('gigstems_active_band') || 'default_fankomatik';
+        
+        let activeBandId = localStorage.getItem('gigstems_active_band') || (bands.length > 0 ? bands.id : "");
 
         // Automatsko pokretanje čim se stranica otvori
         window.onload = () => {
@@ -205,10 +222,14 @@
             document.getElementById('bandNameLabel').innerText = i18n[lang].bandNameLabel;
             document.getElementById('bandUrlLabel').innerText = i18n[lang].bandUrlLabel;
             document.getElementById('connectBtn').innerText = i18n[lang].connectBtn;
-            document.getElementById('deleteBandBtn').innerText = i18n[lang].deleteBtn + " " + i18n[lang].activeBandLabel.toLowerCase().replace(":", "");
+            document.getElementById('deleteBandBtn').innerText = i18n[lang].deleteBandBtnText;
             document.getElementById('searchInput').placeholder = i18n[lang].searchPlaceholder;
             document.getElementById('songsTitle').innerText = i18n[lang].songsTitle;
             document.getElementById('mobileToggleBtn').innerText = "📋 " + i18n[lang].songsTitle.split(" ").slice(1).join(" ");
+            
+            // #NOVO v1.3.2 - Novi prevodi za rename sekciju i prazno stanje
+            document.getElementById('renameBandLabel').innerText = i18n[lang].renameBandLabel;
+            document.getElementById('renameBtn').innerText = i18n[lang].renameBtn;
 
             // Prevodimo play/pause taster
             updatePlayBtnUI();
@@ -242,13 +263,41 @@
         // Iscrtavanje liste bendova u dropdown-u
         function renderBandsUI() {
             bandSelect.innerHTML = "";
-            bands.forEach(band => {
+            
+            // #NOVO v1.3.2 - Podrška za prazno stanje kada korisnik nema nijedan bend
+            if (bands.length === 0) {
                 const opt = document.createElement('option');
-                opt.value = band.id;
-                opt.innerText = band.name;
-                opt.selected = (band.id === activeBandId);
+                opt.value = "";
+                opt.innerText = i18n[currentLang].selectBandPlaceholder;
+                opt.disabled = true;
+                opt.selected = true;
                 bandSelect.appendChild(opt);
-            });
+                bandSelect.disabled = true;
+                
+                // Sakrivamo rename i delete kontrole jer nema šta da se preimenuje/obriše
+                document.getElementById('renameBandSection').style.display = "none";
+                document.getElementById('deleteBandBtn').style.display = "none";
+            } else {
+                bandSelect.disabled = false;
+                
+                // Prikazujemo kontrole za preimenovanje i brisanje
+                document.getElementById('renameBandSection').style.display = "flex";
+                document.getElementById('deleteBandBtn').style.display = "block";
+                
+                bands.forEach(band => {
+                    const opt = document.createElement('option');
+                    opt.value = band.id;
+                    opt.innerText = band.name;
+                    opt.selected = (band.id === activeBandId);
+                    bandSelect.appendChild(opt);
+                });
+
+                // Pre-popunjavamo polje za preimenovanje nazivom aktivnog benda
+                const activeBand = bands.find(b => b.id === activeBandId);
+                if (activeBand) {
+                    document.getElementById('renameBandNameInput').value = activeBand.name;
+                }
+            }
         }
 
         // Sklopivi/rasklopivi panel za dodavanje bendova
@@ -287,10 +336,10 @@
             };
 
             bands.push(newBand);
-            localStorage.setItem('bands', JSON.stringify(bands));
+            localStorage.setItem('gigstems_bands', JSON.stringify(bands));
 
             activeBandId = newBand.id;
-            localStorage.setItem('active_band', activeBandId);
+            localStorage.setItem('gigstems_active_band', activeBandId);
 
             // Čistimo formu i sklapamo je
             nameInput.value = "";
@@ -301,21 +350,42 @@
             loadSongsFromActiveBand();
         }
 
-        // Brisanje aktivnog benda
-        function deleteActiveBand() {
-            if (bands.length <= 1) {
-                alert(currentLang === 'sr' ? "Mora postojati bar jedan bend u listi!" : "There must be at least one band in the list!");
+        // #NOVO v1.3.2 - Funkcija za preimenovanje trenutno izabranog benda (samo za admina)
+        function renameActiveBandSubmit() {
+            const renameInput = document.getElementById('renameBandNameInput');
+            const newName = renameInput.value.trim();
+
+            if (!newName) {
+                alert(currentLang === 'sr' ? "Unesi novi naziv!" : "Enter new name!");
                 return;
             }
+
+            const activeBand = bands.find(b => b.id === activeBandId);
+            if (activeBand) {
+                activeBand.name = newName;
+                localStorage.setItem('gigstems_bands', JSON.stringify(bands));
+                renderBandsUI();
+                // Sklapamo panel nakon preimenovanja radi lepšeg izgleda
+                document.getElementById('addBandPanel').style.display = "none";
+            }
+        }
+
+        // Brisanje aktivnog benda
+        function deleteActiveBand() {
+            if (bands.length === 0) return;
 
             const confirmMsg = i18n[currentLang].deleteBandConfirm;
             if (!confirm(confirmMsg)) return;
 
             bands = bands.filter(b => b.id !== activeBandId);
-            localStorage.setItem('bands', JSON.stringify(bands));
+            localStorage.setItem('gigstems_bands', JSON.stringify(bands));
 
-            activeBandId = bands.id;
-            localStorage.setItem('active_band', activeBandId);
+            if (bands.length > 0) {
+                activeBandId = bands.id;
+            } else {
+                activeBandId = "";
+            }
+            localStorage.setItem('gigstems_active_band', activeBandId);
 
             document.getElementById('addBandPanel').style.display = "none";
             renderBandsUI();
@@ -325,17 +395,29 @@
         // Akcija pri izmeni aktivnog benda u dropdownu
         function onBandChanged(newId) {
             activeBandId = newId;
-            localStorage.setItem('active_band', activeBandId);
+            localStorage.setItem('gigstems_active_band', activeBandId);
             
             // Zaustavljamo reprodukciju i čistimo stari mikser
             stopAudio();
             document.getElementById('mixerContainer').innerHTML = "";
             
+            // Sinhronizujemo preimenovanje input vrednosti
+            const activeBand = bands.find(b => b.id === activeBandId);
+            if (activeBand) {
+                document.getElementById('renameBandNameInput').value = activeBand.name;
+            }
+
             loadSongsFromActiveBand();
         }
 
         // Povezivanje na drajv aktivnog benda i osvežavanje repertoara
         async function loadSongsFromActiveBand() {
+            // #NOVO v1.3.2 - Ako korisnik nema nijedan bend, čistimo listu pesama i izlazimo bez slanja API zahteva
+            if (bands.length === 0 || !activeBandId) {
+                songsList.innerHTML = `<div style="padding:15px; text-align:center; color:#94a3b8;">${i18n[currentLang].noBands}</div>`;
+                return;
+            }
+
             const activeBand = bands.find(b => b.id === activeBandId);
             if (!activeBand) return;
 
@@ -538,10 +620,11 @@
                 const muteClass = trackPreset.muted ? "btn-mute active" : "btn-mute";
                 const soloClass = trackPreset.solo ? "btn-solo active" : "btn-solo";
 
+                // #NOVO v1.3.2 - Zamena klase slajdera u .track-volume-slider radi otklanjanja baga pojedinačne kontrole zvuka
                 strip.innerHTML = `
                     <div class="track-name" title="${name}">${name}</div>
                     <div class="volume-slider-container">
-                        <input type="range" class="volume-slider" min="0" max="1" step="0.01" value="${trackPreset.volume}" oninput="setVolume(${index}, this.value)">
+                        <input type="range" class="track-volume-slider" min="0" max="1" step="0.01" value="${trackPreset.volume}" oninput="setVolume(${index}, this.value)">
                     </div>
                     <button id="muteBtn-${index}" class="${muteClass}" onclick="toggleMute(${index})">MUTE</button>
                     <button id="soloBtn-${index}" class="${soloClass}" onclick="toggleSolo(${index})">SOLO</button>
@@ -566,7 +649,8 @@
             });
 
             trackNames.forEach((_, i) => {
-                const slider = document.querySelectorAll('.volume-slider')[i];
+                // #NOVO v1.3.2 - Popravljen selektor u .track-volume-slider koji eliminiše preklapanje sa master klizačem
+                const slider = document.querySelectorAll('.track-volume-slider')[i];
                 const vol = slider ? parseFloat(slider.value) : 0.8;
                 const isMuted = document.getElementById(`muteBtn-${i}`).classList.contains('active');
                 const isSolo = document.getElementById(`soloBtn-${i}`).classList.contains('active');
@@ -591,7 +675,8 @@
 
             const mixState = {};
             trackNames.forEach((name, index) => {
-                const slider = document.querySelectorAll('.volume-slider')[index];
+                // #NOVO v1.3.2 - Popravljen selektor u .track-volume-slider koji se snima u LocalStorage
+                const slider = document.querySelectorAll('.track-volume-slider')[index];
                 const isMuted = document.getElementById(`muteBtn-${index}`).classList.contains('active');
                 const isSolo = document.getElementById(`soloBtn-${index}`).classList.contains('active');
 
@@ -753,3 +838,4 @@
     </script>
 </body>
 </html>
+,TargetFile:/workspace/scratch/index.html}
