@@ -1,15 +1,15 @@
 // ==========================================================================
-// GIGSTEMS TRANSLATIONS - VERZIJA 1.4.05
+// GIGSTEMS TRANSLATIONS - VERZIJA 1.4.06
 // ==========================================================================
 
 const i18n = {
     sr: {
-        subtitle: "v1.4.04",
+        subtitle: "v1.4.06 • GigLab Dashboard & Modularni Kôd",
         stopBtn: "Zaustavi",
         playBtn: "Pusti trake",
         pauseBtn: "Pauza",
         masterMuteBtn: "UTIŠAJ SVE",
-        masterVolLabel: "MASTER:",
+        masterVolLabel: "MASTER JAČINA:",
         activeBandLabel: "Aktivni bend:",
         addBandBtn: "Upravljaj",
         bandNameLabel: "Naziv novog benda:",
@@ -20,7 +20,7 @@ const i18n = {
         
         // Menadžment bendova
         editSectionTitle: "✏️ Uredi Aktivni Bend",
-        addSectionTitle: "➕ Osnuj Novi Bend",
+        addSectionTitle: "➕ Dodaj Novi Bend",
         deleteSectionTitle: "🗑️ Obriši Aktivni Bend",
         renameBandLabel: "Naziv trenutnog benda:",
         renameBandUrlLabel: "Link Drive foldera:",
@@ -60,7 +60,7 @@ const i18n = {
         authLogout: "Odjavi se",
         authWelcome: "Muzičar: {name}",
         authSuccessLogin: "Uspešna prijava!",
-        authSuccessRegister: "Uspešna registracija! Sada se možete prijaviti.",
+        authSuccessRegister: "Uspešna registracija! Poslat je kod na e-mail.",
         authError: "Greška: {msg}",
         
         roleAdmin: "ŠEF / ADMIN",
@@ -68,8 +68,8 @@ const i18n = {
         
         joinCodeLabel: "Kod za učlanjenje u bend:",
         joinCodeBtn: "Priključi se pomoću koda",
-        joinCodeSuccess: "Uspešno ste se priključili bendu!",
         joinCodePlaceholder: "Npr. FANK99",
+        joinCodeSuccess: "Uspešno ste se priključili bendu!",
         
         inviteEmailLabel: "Pozovi člana preko Email-a:",
         inviteEmailBtn: "Pošalji pozivnicu",
@@ -83,25 +83,42 @@ const i18n = {
         onlyAdminEditMsg: "Samo Šef / Admin benda može menjati drajv link ili brisati bend.",
         
         duplicateNameError: "Bend sa tim nazivom već postoji u bazi!",
-        
-        // #NOVO v1.4.05 - Verifikacija email adrese
-        verificationTitle: "📩 Potvrdi Email",
-        verificationText: "Poslat vam je 6-cifreni kod na e-mail. Unesite ga ispod da biste aktivirali nalog:",
-        verificationCodeLabel: "Aktivacioni kod:",
-        verificationCodePlaceholder: "Npr. 123456",
-        verificationSubmitBtn: "Potvrdi i prijavi se",
-        verificationBackBtn: "◀ Nazad na registraciju",
-        verificationSuccess: "Uspešna verifikacija! Dobrodošli!",
         duplicateUrlError: "Ovaj Google Drive folder je već unet!",
-        emptyNameError: "Naziv ne može biti prazan!"
+        emptyNameError: "Naziv ne može biti prazan!",
+
+        // NOVO v1.4.06 - Dashboard i napredna podešavanja
+        btnNewBand: "➕ Novi bend",
+        btnBackToDashboard: "◀ Nazad na bend",
+        songsBadge: "Pesme",
+        concertsBadge: "Svirke",
+        uploadLogo: "Postavi logo",
+        uploadAvatar: "Izaberi sliku",
+        ownerBadge: "OWNER",
+        memberBadge: "MEMBER",
+        settingsTitle: "⚙️ Podešavanja",
+        tabRegional: "Aplikacija",
+        tabProfile: "Profil",
+        tabPassword: "Lozinka",
+        tabAccount: "Nalog",
+        timeFormatLabel: "Format vremena:",
+        dateFormatLabel: "Format datuma:",
+        timezoneLabel: "Vremenska zona:",
+        tempUnitLabel: "Temperatura:",
+        deleteAccountText: "Brisanjem naloga trajno brišete sve svoje podatke, bendove u kojima ste osnivač i sačuvane mikseve.",
+        btnDeleteAccount: "Trajno obriši moj nalog",
+        verificationText: "📩 Potvrda Email adrese",
+        verificationSub: "Poslat vam je 6-cifreni kod na e-mail. Unesite ga ispod da završite registraciju:",
+        btnVerify: "Potvrdi kod",
+        btnBackToAuth: "◀ Nazad na prijavu",
+        verificationError: "Uneli ste neispravan ili istekao kôd!"
     },
     en: {
-        subtitle: "v1.4.04",
+        subtitle: "v1.4.06 • GigLab Dashboard & Modular Code",
         stopBtn: "Stop",
         playBtn: "Play Stems",
         pauseBtn: "Pause",
         masterMuteBtn: "MUTE ALL",
-        masterVolLabel: "MASTER:",
+        masterVolLabel: "MASTER VOLUME:",
         activeBandLabel: "Active Band:",
         addBandBtn: "Manage",
         bandNameLabel: "New Band Name:",
@@ -152,7 +169,7 @@ const i18n = {
         authLogout: "Log Out",
         authWelcome: "Musician: {name}",
         authSuccessLogin: "Successfully logged in!",
-        authSuccessRegister: "Registration successful! You can now log in.",
+        authSuccessRegister: "Registration successful! Verification code sent to email.",
         authError: "Error: {msg}",
         
         roleAdmin: "BAND LEADER / ADMIN",
@@ -160,8 +177,8 @@ const i18n = {
         
         joinCodeLabel: "Join band with access code:",
         joinCodeBtn: "Join Band",
-        joinCodeSuccess: "Successfully joined the band!",
         joinCodePlaceholder: "E.g. FANK99",
+        joinCodeSuccess: "Successfully joined the band!",
         
         inviteEmailLabel: "Invite member by Email:",
         inviteEmailBtn: "Send Invite",
@@ -175,16 +192,33 @@ const i18n = {
         onlyAdminEditMsg: "Only the Band Leader / Admin can change the Drive link or delete the band.",
         
         duplicateNameError: "A band with this name already exists in the database!",
-        
-        // #NOVO v1.4.05 - Email verification
-        verificationTitle: "📩 Verify Email",
-        verificationText: "A 6-digit code has been sent to your email. Enter it below to activate your account:",
-        verificationCodeLabel: "Activation code:",
-        verificationCodePlaceholder: "E.g. 123456",
-        verificationSubmitBtn: "Verify & Log In",
-        verificationBackBtn: "◀ Back to registration",
-        verificationSuccess: "Verification successful! Welcome!",
         duplicateUrlError: "This Google Drive folder is already imported!",
-        emptyNameError: "Name cannot be empty!"
+        emptyNameError: "Name cannot be empty!",
+
+        // NOVO v1.4.06 - Dashboard i napredna podešavanja
+        btnNewBand: "➕ New Band",
+        btnBackToDashboard: "◀ Back to Band",
+        songsBadge: "Songs",
+        concertsBadge: "Concerts",
+        uploadLogo: "Upload Logo",
+        uploadAvatar: "Choose Image",
+        ownerBadge: "OWNER",
+        memberBadge: "MEMBER",
+        settingsTitle: "⚙️ Settings",
+        tabRegional: "Application",
+        tabProfile: "Profile",
+        tabPassword: "Password",
+        tabAccount: "Account",
+        timeFormatLabel: "Time Format:",
+        dateFormatLabel: "Date Format:",
+        timezoneLabel: "Timezone:",
+        tempUnitLabel: "Temperature:",
+        deleteAccountText: "Deleting your account permanently deletes all your data, bands you own, and saved mixes.",
+        btnDeleteAccount: "Permanently Delete My Account",
+        verificationText: "📩 Email Verification",
+        verificationSub: "A 6-digit code has been sent to your email. Enter it below to complete registration:",
+        btnVerify: "Verify Code",
+        btnBackToAuth: "◀ Back to Login",
+        verificationError: "Invalid or expired code entered!"
     }
 };
