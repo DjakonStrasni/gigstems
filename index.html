@@ -3,21 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GigStems - Prototip v1.1.0</title>
+    <title>GigStems - Prototip v1.2.0</title>
     <!-- Poziv eksternog CSS-a radi očuvanja konzistentnosti dizajna -->
     <link rel="stylesheet" href="style.css">
+    <!-- #NOVO v1.2.0 - Eksterni fajl sa prevodima radi lakšeg uređivanja i lokalizacije -->
+    <script src="translations.js"></script>
 </head>
 <body>
 
     <h1>GigStems</h1>
-    <p class="subtitle">v1.1.0 • Lokalno učitavanje foldera</p>
+    <!-- Dodat ID za dinamički prevod podnaslova -->
+    <p id="subtitleText" class="subtitle">v1.2.0 • Lokalno učitavanje foldera</p>
+
+    <!-- Jezički selektor na vrhu ekrana -->
+    <div class="lang-container">
+        <button id="lang-sr" class="btn-lang" onclick="setLanguage('sr')">SR</button>
+        <button id="lang-en" class="btn-lang" onclick="setLanguage('en')">EN</button>
+    </div>
 
     <!-- Kontrolna Tabla -->
     <div class="controls-master">
         <div class="buttons-row">
-            <!-- #NOVO v1.1.0 - Dugme za dinamičko učitavanje celog lokalnog foldera sa pesmom -->
+            <!-- Reorganizovan HTML labela i dodat ID za čist prevod bez uništavanja input osluškivača -->
             <label class="file-label" style="background: #334155; color: #f8fafc; padding: 12px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; text-align: center; width: 60%; box-sizing: border-box; display: inline-block;">
-                📁 Učitaj folder
+                <span id="loadBtnLabel">📁 Učitaj folder</span>
                 <input type="file" id="folderInput" webkitdirectory directory multiple style="display: none;">
             </label>
             <button id="stopBtn" class="btn-stop" onclick="stopAudio()" disabled>
@@ -26,6 +35,7 @@
         </div>
 
         <div class="buttons-row" style="margin-top: 10px;">
+            <!-- Play dugme sada ima samo span i upravlja se kroz centralni UI prevodilac -->
             <button id="playBtn" class="btn-play" onclick="togglePlay()" disabled style="width: 100%;">
                 <span>▶ Pusti trake</span>
             </button>
@@ -60,12 +70,66 @@
         let totalDuration = 0;
         let timerInterval;
 
+        // Promenljiva za identifikaciju trenutno učitane pesme radi pamćenja miksa
+        let currentSongName = "";
+
+        // Pamćenje i učitavanje izabranog jezika iz Local Storage-a
+        let currentLang = localStorage.getItem('gigstems_lang') || 'sr';
+
         const folderInput = document.getElementById('folderInput');
         const playBtn = document.getElementById('playBtn');
         const stopBtn = document.getElementById('stopBtn');
         const statusLabel = document.getElementById('statusLabel');
 
-        // #NOVO v1.1.0 - Osluškivač za izbor lokalnog foldera
+        // Automatsko pokretanje čim se stranica otvori
+        window.onload = () => {
+            setLanguage(currentLang);
+        };
+
+        // Funkcija za dinamičku promenu jezika na celom interfejsu bez osvežavanja stranice
+        function setLanguage(lang) {
+            currentLang = lang;
+            localStorage.setItem('gigstems_lang', lang);
+
+            // Ažuriramo aktivne klase na tasterima za jezik
+            document.getElementById('lang-sr').classList.toggle('active', lang === 'sr');
+            document.getElementById('lang-en').classList.toggle('active', lang === 'en');
+
+            // Prevodimo statičke tekstove
+            document.getElementById('subtitleText').innerText = i18n[lang].subtitle;
+            document.getElementById('loadBtnLabel').innerText = "📁 " + i18n[lang].loadBtn;
+            stopBtn.querySelector('span').innerText = i18n[lang].stopBtn;
+            
+            // Prevodimo play/pause taster
+            updatePlayBtnUI();
+
+            // Prevodimo trenutni status u zavisnosti od toga da li imamo učitane trake
+            if (audioBuffers.length === 0) {
+                updateStatusText('statusInit');
+            } else {
+                updateStatusText('statusReady', audioBuffers.length);
+            }
+        }
+
+        // Pomoćna funkcija za ažuriranje teksta statusne trake
+        function updateStatusText(key, param = null) {
+            let text = i18n[currentLang][key];
+            if (param !== null) {
+                text = text.replace("{count}", param);
+            }
+            statusLabel.innerText = text;
+        }
+
+        // Pomoćna funkcija za vizuelni prikaz Play/Pause stanja u skladu sa izabranim jezikom
+        function updatePlayBtnUI() {
+            if (isPlaying) {
+                playBtn.innerHTML = `<span>⏸ ${i18n[currentLang].pauseBtn}</span>`;
+            } else {
+                playBtn.innerHTML = `<span>▶ ${i18n[currentLang].playBtn}</span>`;
+            }
+        }
+
+        // Osluškivač za izbor lokalnog foldera
         folderInput.addEventListener('change', async (e) => {
             // Filtriramo samo audio fajlove (mp3, wav, ogg, m4a...)
             const files = Array.from(e.target.files).filter(file => {
@@ -76,13 +140,14 @@
             });
             
             if (files.length === 0) {
-                alert("Nema ispravnih audio fajlova u izabranom folderu!");
+                updateStatusText('statusNoFiles');
+                alert(i18n[currentLang].statusNoFiles);
                 return;
             }
 
             // Zaustavljamo prethodni audio ako je svirao i čistimo stare podatke
             stopAudio();
-            statusLabel.innerText = "Učitavam i sinhronizujem trake u memoriju (RAM)...";
+            updateStatusText('statusLoading');
             playBtn.disabled = true;
             stopBtn.disabled = true;
 
@@ -95,21 +160,25 @@
             gainNodes = [];
             totalDuration = 0;
 
-            // #NOVO v1.1.0 - Sortiranje fajlova po imenu kako bismo uvek imali isti raspored kanala
+            // Određivanje imena pesme iz webkitRelativePath krovnog foldera radi pamćenja miksa
+            const relativePath = files.webkitRelativePath;
+            currentSongName = relativePath ? relativePath.split('/') : "nepoznata_pesma";
+
+            // Sortiranje fajlova po imenu kako bismo uvek imali isti raspored kanala
             files.sort((a, b) => a.name.localeCompare(b.name));
 
             try {
                 // Prolazimo kroz sve fajlove i dekodiramo ih u RAM memoriju
                 for (let i = 0; i < files.length; i++) {
                     const file = files[i];
-                    statusLabel.innerText = `Dekodiram kanal [${i + 1}/${files.length}]: ${file.name}...`;
+                    statusLabel.innerText = `${i18n[currentLang].statusDecoding} [${i + 1}/${files.length}]: ${file.name}...`;
                     
                     const arrayBuffer = await file.arrayBuffer();
                     const decodedData = await audioCtx.decodeAudioData(arrayBuffer);
                     
                     audioBuffers.push(decodedData);
                     
-                    // #NOVO v1.1.0 - Funkcija za prečišćavanje naziva traka (sklanja ekstenzije i početne brojeve npr. 01_bass -> bass)
+                    // Funkcija za prečišćavanje naziva traka (sklanja ekstenzije i početne brojeve npr. 01_bass -> bass)
                     let cleanName = file.name.replace(/\.[^/.]+$/, ""); // uklanja ekstenziju (.mp3, .wav...)
                     cleanName = cleanName.replace(/^\d+[\s_.-]*/, ""); // uklanja brojeve i znakove sa početka (01_, 02-, itd.)
                     // Prvo slovo veliko radi lepše estetike miksete
@@ -123,7 +192,7 @@
                     }
                 }
 
-                statusLabel.innerText = `Učitano je ${files.length} traka. Spremno za svirku!`;
+                updateStatusText('statusReady', files.length);
                 document.getElementById('totalTime').innerText = formatTime(totalDuration);
                 
                 // Dinamički gradimo miksetu sa tačnim brojem učitanih traka
@@ -132,7 +201,7 @@
                 playBtn.disabled = false;
                 stopBtn.disabled = false;
             } catch (err) {
-                statusLabel.innerText = "Greška pri učitavanju i dekodiranju fajlova.";
+                updateStatusText('statusError');
                 console.error("Greška u Audio Engine-u:", err);
             }
         });
@@ -142,68 +211,124 @@
             const container = document.getElementById('mixerContainer');
             container.innerHTML = '';
 
+            // Učitavanje sačuvanog miksa za ovu pesmu iz Local Storage-a
+            let savedMix = {};
+            if (currentSongName) {
+                const rawSave = localStorage.getItem('gigstems_mix_' + currentSongName);
+                if (rawSave) {
+                    try {
+                        savedMix = JSON.parse(rawSave);
+                    } catch (e) {
+                        console.error("Greška pri čitanju sačuvanog miksa:", e);
+                    }
+                }
+            }
+
             trackNames.forEach((name, index) => {
-                // Kreiramo GainNode (regulator jačine) za svaki kanal posebno
+                // Vraćamo sačuvano stanje za ovu traku, ili postavljamo standardne početne nivoe
+                const trackPreset = savedMix[name] || { volume: 0.8, muted: false, solo: false };
+
                 const gainNode = audioCtx.createGain();
-                gainNode.gain.value = 0.8; // Podrazumevana jačina na 80%
+                // Inicijalna jačina (biće precizno podešena i sinhronizovana kroz applyGainsFromUI)
+                gainNode.gain.value = trackPreset.muted ? 0 : trackPreset.volume;
                 gainNodes.push(gainNode);
 
                 const strip = document.createElement('div');
                 strip.className = 'track-strip';
+
+                const muteClass = trackPreset.muted ? "btn-mute active" : "btn-mute";
+                const soloClass = trackPreset.solo ? "btn-solo active" : "btn-solo";
+
                 strip.innerHTML = `
                     <div class="track-name" title="${name}">${name}</div>
                     <div class="volume-slider-container">
-                        <input type="range" class="volume-slider" min="0" max="1" step="0.01" value="0.8" oninput="setVolume(${index}, this.value)">
+                        <input type="range" class="volume-slider" min="0" max="1" step="0.01" value="${trackPreset.volume}" oninput="setVolume(${index}, this.value)">
                     </div>
-                    <button id="muteBtn-${index}" class="btn-mute" onclick="toggleMute(${index})">MUTE</button>
-                    <button id="soloBtn-${index}" class="btn-solo" onclick="toggleSolo(${index})">SOLO</button>
+                    <button id="muteBtn-${index}" class="${muteClass}" onclick="toggleMute(${index})">MUTE</button>
+                    <button id="soloBtn-${index}" class="${soloClass}" onclick="toggleSolo(${index})">SOLO</button>
                 `;
                 container.appendChild(strip);
             });
+
+            // Centralno primenjujemo sve gain nivoe i rešavamo potencijalne Solo/Mute konflikte
+            applyGainsFromUI();
+        }
+
+        // Centralni algoritam za izračunavanje i primenu Gain vrednosti na osnovu stanja UI dugmića.
+        // Izuzetno robustan sistem koji sprečava sve konflikte između Solo i Mute funkcija.
+        function applyGainsFromUI() {
+            if (!audioCtx) return;
+
+            // Proveravamo da li je aktivan ijedan Solo taster
+            let isAnySoloActive = false;
+            trackNames.forEach((_, i) => {
+                const soloBtn = document.getElementById(`soloBtn-${i}`);
+                if (soloBtn && soloBtn.classList.contains('active')) {
+                    isAnySoloActive = true;
+                }
+            });
+
+            trackNames.forEach((_, i) => {
+                const slider = document.querySelectorAll('.volume-slider')[i];
+                const vol = slider ? parseFloat(slider.value) : 0.8;
+                const isMuted = document.getElementById(`muteBtn-${i}`).classList.contains('active');
+                const isSolo = document.getElementById(`soloBtn-${i}`).classList.contains('active');
+
+                let finalGain = vol;
+
+                // Ako je kanal mutiran, jačina je nula. Ako je neki drugi kanal u Solo modu, a ovaj nije, jačina je nula.
+                if (isMuted) {
+                    finalGain = 0;
+                } else if (isAnySoloActive && !isSolo) {
+                    finalGain = 0;
+                }
+
+                if (gainNodes[i]) {
+                    gainNodes[i].gain.setValueAtTime(finalGain, audioCtx.currentTime);
+                }
+            });
+        }
+
+        // Funkcija koja snima trenutni izgled miksete za aktivnu pesmu u Local Storage browsera
+        function saveMixState() {
+            if (!currentSongName) return;
+
+            const mixState = {};
+            trackNames.forEach((name, index) => {
+                const slider = document.querySelectorAll('.volume-slider')[index];
+                const isMuted = document.getElementById(`muteBtn-${index}`).classList.contains('active');
+                const isSolo = document.getElementById(`soloBtn-${index}`).classList.contains('active');
+
+                mixState[name] = {
+                    volume: slider ? parseFloat(slider.value) : 0.8,
+                    muted: isMuted,
+                    solo: isSolo
+                };
+            });
+
+            localStorage.setItem('gigstems_mix_' + currentSongName, JSON.stringify(mixState));
         }
 
         // Kontrola jačine kanala
         function setVolume(index, value) {
-            const isMuted = document.getElementById(`muteBtn-${index}`).classList.contains('active');
-            if (!isMuted) {
-                gainNodes[index].gain.setValueAtTime(value, audioCtx.currentTime);
-            }
+            applyGainsFromUI();
+            saveMixState();
         }
 
         // Mute funkcionalnost bez ispadanja iz sinhronizacije
         function toggleMute(index) {
             const btn = document.getElementById(`muteBtn-${index}`);
-            const slider = btn.parentNode.querySelector('.volume-slider');
-            const isActive = btn.classList.toggle('active');
-
-            if (isActive) {
-                gainNodes[index].gain.setValueAtTime(0, audioCtx.currentTime);
-            } else {
-                gainNodes[index].gain.setValueAtTime(slider.value, audioCtx.currentTime);
-            }
+            btn.classList.toggle('active');
+            applyGainsFromUI();
+            saveMixState();
         }
 
-        // Solo funkcionalnost (utišava sve ostale kanale)
+        // Solo funkcionalnost
         function toggleSolo(index) {
             const btn = document.getElementById(`soloBtn-${index}`);
-            const isSoloActive = btn.classList.toggle('active');
-
-            gainNodes.forEach((gn, i) => {
-                const sliderVal = document.getElementById(`mixerContainer`).querySelectorAll('.volume-slider')[i].value;
-                const isMuted = document.getElementById(`muteBtn-${i}`).classList.contains('active');
-                const soloBtn = document.getElementById(`soloBtn-${i}`);
-
-                if (isSoloActive) {
-                    if (i !== index) {
-                        gn.gain.setValueAtTime(0, audioCtx.currentTime);
-                        soloBtn.classList.remove('active');
-                    } else {
-                        gn.gain.setValueAtTime(isMuted ? 0 : sliderVal, audioCtx.currentTime);
-                    }
-                } else {
-                    gn.gain.setValueAtTime(isMuted ? 0 : sliderVal, audioCtx.currentTime);
-                }
-            });
+            btn.classList.toggle('active');
+            applyGainsFromUI();
+            saveMixState();
         }
 
         // Play i Pause logika sa sinhronim startom u milisekundu
@@ -217,7 +342,7 @@
                 pauseOffset += audioCtx.currentTime - startTime;
                 stopSourceNodes();
                 isPlaying = false;
-                playBtn.innerHTML = "<span>▶ Pusti trake</span>";
+                updatePlayBtnUI();
                 clearInterval(timerInterval);
             } else {
                 // Play stanje
@@ -227,7 +352,7 @@
                 startSourceNodes(pauseOffset);
                 startTime = audioCtx.currentTime;
                 isPlaying = true;
-                playBtn.innerHTML = "<span>⏸ Pauziraj</span>";
+                updatePlayBtnUI();
                 timerInterval = setInterval(updateUI, 100);
             }
         }
@@ -264,7 +389,7 @@
             stopSourceNodes();
             isPlaying = false;
             pauseOffset = 0;
-            playBtn.innerHTML = "<span>▶ Pusti trake</span>";
+            updatePlayBtnUI();
             document.getElementById('currentTime').innerText = "00:00";
             document.getElementById('seekBar').value = 0;
             clearInterval(timerInterval);
@@ -306,3 +431,4 @@
     </script>
 </body>
 </html>
+
