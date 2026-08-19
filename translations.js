@@ -1,13 +1,13 @@
 /**
  * ==========================================================================
  * GIGSTEMS TRANSLATION DICTIONARY (translations.js)
- * v1.3.3 • Zaseban fajl sa prevodima radi lakšeg uređivanja i lokalizacije
+ * v1.3.4 • Zaseban fajl sa prevodima radi lakšeg uređivanja i lokalizacije
  * ==========================================================================
  */
 
 const i18n = {
     sr: {
-        subtitle: "v1.3.3 • Repertoar i Menadžment",
+        subtitle: "v1.3.4 • Google Drive Repertoar",
         stopBtn: "Zaustavi",
         playBtn: "Pusti trake",
         pauseBtn: "Pauziraj",
@@ -22,13 +22,13 @@ const i18n = {
         
         // Upravljanje bendovima, pretraga i sidebar
         settingsTitle: "⚙️ Upravljanje Bendovima",
-        bandNameLabel: "Naziv novog benda:",
+        bandNameLabel: "Naziv benda:",
         bandUrlLabel: "Google Drive Link Foldera:",
-        connectBtn: "Dodaj novi bend",
+        connectBtn: "Dodaj bend",
         searchPlaceholder: "🔍 Pretraži pesmu...",
         activeBandLabel: "Bend:",
         songsTitle: "📋 Spisak Pesama",
-        noBands: "Nema sačuvanih bendova. Dodaj novi ispod.",
+        noBands: "Nema sačuvanih bendova. Dodaj novi iznad.",
         noSongs: "Nema pronađenih pesama.",
         deleteBandConfirm: "Da li ste sigurni da želite da obrišete ovaj bend?",
         addBandBtn: "Upravljaj",
@@ -37,20 +37,22 @@ const i18n = {
         statusConnected: "Uspešno povezan! Izaberi pesmu sa liste.",
         statusConnError: "Greška pri povezivanju. Proveri API ključ i link foldera.",
         
-        // #NOVO v1.3.3 - Unapređeni prevodi za editovanje i jasnu organizaciju
+        // Menadžment i editovanje
         editSectionTitle: "✏️ Uredi Aktivni Bend",
         addSectionTitle: "➕ Dodaj Novi Bend",
         renameBandLabel: "Naziv trenutnog benda:",
         renameBandUrlLabel: "Link Drive foldera:",
         renameBtn: "Sačuvaj izmene",
-        selectBandPlaceholder: "-- Izaberi bend --",
+        selectBandPlaceholder: "-- Bez benda --",
         deleteBandBtnText: "❌ Obriši ovaj bend",
-        duplicateNameError: "Bend sa tim nazivom već postoji!",
-        emptyNameError: "Naziv benda ne može biti prazan!",
-        duplicateUrlError: "Ovaj Drive folder je već dodat!"
+        
+        // Greške i validacija
+        duplicateNameError: "Greška: Bend sa ovim nazivom već postoji!",
+        duplicateUrlError: "Greška: Ovaj Google Drive link je već dodat za neki drugi bend!",
+        emptyNameError: "Greška: Naziv benda ne može biti prazan!"
     },
     en: {
-        subtitle: "v1.3.3 • Repertoire & Management",
+        subtitle: "v1.3.4 • Google Drive Repertoire",
         stopBtn: "Stop",
         playBtn: "Play tracks",
         pauseBtn: "Pause",
@@ -65,13 +67,13 @@ const i18n = {
         
         // Translations for band management, search and sidebar
         settingsTitle: "⚙️ Manage Bands",
-        bandNameLabel: "New Band Name:",
+        bandNameLabel: "Band Name:",
         bandUrlLabel: "Google Drive Folder Link:",
-        connectBtn: "Add new band",
+        connectBtn: "Add Band",
         searchPlaceholder: "🔍 Search song...",
         activeBandLabel: "Band:",
         songsTitle: "📋 Song Repertoire",
-        noBands: "No saved bands. Add a new one below.",
+        noBands: "No saved bands. Add a new one above.",
         noSongs: "No songs found.",
         deleteBandConfirm: "Are you sure you want to delete this band?",
         addBandBtn: "Manage",
@@ -80,16 +82,18 @@ const i18n = {
         statusConnected: "Successfully connected! Select a song from the list.",
         statusConnError: "Connection error. Check API key and folder link.",
         
-        // #NOVO v1.3.3 - Enhanced translations for editing and clear layout
+        // Management and editing
         editSectionTitle: "✏️ Edit Active Band",
         addSectionTitle: "➕ Add New Band",
         renameBandLabel: "Current band name:",
         renameBandUrlLabel: "Drive folder link:",
         renameBtn: "Save changes",
-        selectBandPlaceholder: "-- Select band --",
+        selectBandPlaceholder: "-- No band --",
         deleteBandBtnText: "❌ Delete this band",
-        duplicateNameError: "A band with that name already exists!",
-        emptyNameError: "Band name cannot be empty!",
-        duplicateUrlError: "This Drive folder is already added!"
+        
+        // Errors and validation
+        duplicateNameError: "Error: A band with this name already exists!",
+        duplicateUrlError: "Error: This Google Drive link has already been added for another band!",
+        emptyNameError: "Error: Band name cannot be empty!"
     }
 };
