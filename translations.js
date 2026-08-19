@@ -7,7 +7,7 @@
 
 const i18n = {
     sr: {
-        subtitle: "v1.3.4 • Google Drive Repertoar",
+        subtitle: "v1.3.5 • Google Drive Repertoar",
         stopBtn: "Zaustavi",
         playBtn: "Pusti trake",
         pauseBtn: "Pauziraj",
@@ -52,7 +52,7 @@ const i18n = {
         emptyNameError: "Greška: Naziv benda ne može biti prazan!"
     },
     en: {
-        subtitle: "v1.3.4 • Google Drive Repertoire",
+        subtitle: "v1.3.5 • Google Drive Repertoire",
         stopBtn: "Stop",
         playBtn: "Play tracks",
         pauseBtn: "Pause",
