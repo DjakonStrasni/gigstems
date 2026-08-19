@@ -1,6 +1,6 @@
 /* ==========================================================================
    GIGSTEMS GLOBAL STYLES (style.css)
-   v1.3.1 • Responzivni sidebar/drawer dizajn sa pretragom i upravljanjem bendovima
+   v1.3.2 • Responzivni sidebar/drawer dizajn sa pretragom i upravljanjem bendovima
    ========================================================================== */
 
 /* Osnovni stilovi za mračnu temu */
@@ -156,7 +156,7 @@ p.subtitle {
     cursor: pointer;
 }
 
-/* Detalji/Sklopiva forma za dodavanje benda */
+/* Detalji/Sklopiva forma za dodavanje i preimenovanje benda */
 .band-manager-panel {
     display: flex;
     flex-direction: column;
@@ -209,6 +209,9 @@ p.subtitle {
     border-radius: 6px;
     cursor: pointer;
     border: none;
+    width: 100%;
+    margin-top: 5px;
+    font-weight: bold;
 }
 
 /* Pretraga i Lista Pesama */
@@ -432,7 +435,8 @@ button:disabled {
     align-items: center;
 }
 
-.volume-slider {
+/* #NOVO v1.3.2 - Dodata posebna klasa kako bismo razgraničili pojedinačne slajdere od master slajdera */
+.track-volume-slider {
     width: 100%;
     height: 4px;
     background: #475569;
@@ -441,7 +445,7 @@ button:disabled {
     -webkit-appearance: none;
 }
 
-.volume-slider::-webkit-slider-thumb {
+.track-volume-slider::-webkit-slider-thumb {
     -webkit-appearance: none;
     width: 14px;
     height: 14px;
@@ -516,7 +520,7 @@ button:disabled {
     }
 
     .mobile-toggle-btn {
-        display: block; /* Prikazuje se dugme za repertoar */
+        display: block;
     }
 
     /* Pretvaramo Sidebar u klizni Drawer */
