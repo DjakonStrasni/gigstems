@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GigStems - Prototip v1.4.0</title>
+    <title>GigStems - Prototip v1.4.01</title>
     <!-- Poziv eksternog CSS-a radi očuvanja konzistentnosti dizajna -->
     <link rel="stylesheet" href="style.css">
     <!-- Eksterni fajl sa prevodima radi lakšeg uređivanja i lokalizacije -->
@@ -49,7 +49,7 @@
         <div id="appSidebar" class="sidebar">
             <div class="sidebar-header">
                 <span class="sidebar-logo">GigStems</span>
-                <p id="subtitleText" class="subtitle">v1.4.0 • Cloud & Članstvo</p>
+                <p id="subtitleText" class="subtitle">v1.4.01 • Cloud & Članstvo</p>
                 <div class="sidebar-divider"></div>
             </div>
 
@@ -215,11 +215,11 @@
         // ==========================================================================
 
         // #NOVO v1.4.0 - Supabase konekcioni podaci uneti direktno na tvoj zahtev
-        const SUPABASE_URL = "https://yqmxwgikcqibbkpqstux.supabase.co";
+        const SUPABASE_URL = "https://yqmxwgikcqibbkpqstux.supabaseClient.co";
         const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlxbXh3Z2lrY3FpYmJrcHFzdHV4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODcxNjEwNDksImV4cCI6MjEwMjczNzA0OX0.TVedwos2OOmvggCK-zyevtV6S2Vfdax9e9ygHhKr5nA";
 
         // Inicijalizacija Supabase Klijenta
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         // TVOJ BEZBEDNI GOOGLE API KLJUČ (Ograničen na tvoj GitHub Pages domen)
         const GIGSTEMS_API_KEY = "AIzaSyBiq4QbYuCtVyy9_-dJTCTcCtPfwZc-Gu8";
@@ -265,7 +265,7 @@
         // ==========================================================================
 
         // Slušač promena stanja sesije (Automatsko logovanje pri osvežavanju)
-        supabase.auth.onAuthStateChange((event, session) => {
+        supabaseClient.auth.onAuthStateChange((event, session) => {
             if (session) {
                 authContainer.style.display = "none";
                 appContainer.style.display = "flex";
@@ -279,7 +279,7 @@
 
         // Učitavanje i prepoznavanje imena ulogovanog muzičara
         async function loadUserProfile(user) {
-            const { data, error } = await supabase
+            const { data, error } = await supabaseClient
                 .from('profiles')
                 .select('*')
                 .eq('id', user.id)
@@ -329,7 +329,7 @@
 
             if (isRegisterMode) {
                 // Registracija novog naloga
-                const { data, error } = await supabase.auth.signUp({
+                const { data, error } = await supabaseClient.auth.signUp({
                     email,
                     password,
                     options: {
@@ -348,7 +348,7 @@
                 }
             } else {
                 // Prijavljivanje na postojeći nalog
-                const { data, error } = await supabase.auth.signInWithPassword({
+                const { data, error } = await supabaseClient.auth.signInWithPassword({
                     email,
                     password
                 });
@@ -362,7 +362,7 @@
         // Odjavljivanje korisnika sa sistema
         async function handleLogout() {
             stopAudio();
-            const { error } = await supabase.auth.signOut();
+            const { error } = await supabaseClient.auth.signOut();
         }
 
         // ==========================================================================
@@ -424,7 +424,7 @@
             if (!currentUserProfile) return;
 
             // Upit spaja tabelu članova i tabelu samih bendova
-            const { data, error } = await supabase
+            const { data, error } = await supabaseClient
                 .from('band_members')
                 .select(`
                     role,
@@ -483,7 +483,7 @@
                 card.className = "band-card";
                 
                 // Povlačenje svih kolega iz istog benda (Članovi tima)
-                const { data: membersData } = await supabase
+                const { data: membersData } = await supabaseClient
                     .from('band_members')
                     .select('role, profiles(display_name, email)')
                     .eq('band_id', band.id);
@@ -578,7 +578,7 @@
             const joinCode = 'GIG-' + Math.floor(100 + Math.random() * 900);
 
             // Korak A: Upisujemo novi bend u tabelu 'bands'
-            const { data: bandData, error: bandError } = await supabase
+            const { data: bandData, error: bandError } = await supabaseClient
                 .from('bands')
                 .insert({
                     name,
@@ -595,7 +595,7 @@
             }
 
             // Korak B: Automatski postavljamo osnivača kao glavnog ADMINA u tabeli 'band_members'
-            const { error: memberError } = await supabase
+            const { error: memberError } = await supabaseClient
                 .from('band_members')
                 .insert({
                     band_id: bandData.id,
@@ -628,7 +628,7 @@
             }
 
             // Pronalazimo bend sa tim kodom u bazi
-            const { data: bandData, error: bandError } = await supabase
+            const { data: bandData, error: bandError } = await supabaseClient
                 .from('bands')
                 .select('*')
                 .eq('join_code', code)
@@ -640,7 +640,7 @@
             }
 
             // Proveravamo da li je već član
-            const { data: isMember } = await supabase
+            const { data: isMember } = await supabaseClient
                 .from('band_members')
                 .select('*')
                 .eq('band_id', bandData.id)
@@ -653,7 +653,7 @@
             }
 
             // Upisujemo novog korisnika kao običnog člana (User)
-            const { error: joinError } = await supabase
+            const { error: joinError } = await supabaseClient
                 .from('band_members')
                 .insert({
                     band_id: bandData.id,
@@ -680,7 +680,7 @@
             if (!confirm(confirmMsg)) return;
 
             // Supabase automatski kaskadno briše članove i presete zbog "ON DELETE CASCADE" pravila
-            const { error } = await supabase
+            const { error } = await supabaseClient
                 .from('bands')
                 .delete()
                 .eq('id', activeBandId);
@@ -844,7 +844,7 @@
                 document.getElementById('totalTime').innerText = formatTime(totalDuration);
                 
                 // #NOVO v1.4.0 - Učitavamo miks i redosled traka direktno iz Supabase Cloud baze!
-                const { data: presetData } = await supabase
+                const { data: presetData } = await supabaseClient
                     .from('song_presets')
                     .select('*')
                     .eq('band_id', activeBandId)
@@ -954,7 +954,7 @@
             const track_order = [...trackNames];
 
             // Upisujemo ili ažuriramo red u bazi pomoću Supabase UPSERT funkcije
-            const { error } = await supabase
+            const { error } = await supabaseClient
                 .from('song_presets')
                 .upsert({
                     band_id: activeBandId,
