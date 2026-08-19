@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GigStems v1.4.04</title>
+    <title>GigStems v1.4.05</title>
     <!-- Poziv eksternog CSS-a radi očuvanja konzistentnosti dizajna -->
     <link rel="stylesheet" href="style.css">
     <!-- Eksterni fajl sa prevodima radi lakšeg uređivanja i lokalizacije -->
@@ -18,26 +18,49 @@
 
     <!-- EKRAN ZA AUTENTIFIKACIJU (Prikazuje se kada korisnik nije ulogovan) -->
     <div id="authContainer" class="auth-wrapper" style="display: none;">
-        <h2 id="authTitle" class="auth-title">🔑 Prijavljivanje</h2>
-        
-        <div id="authDisplayNameGroup" class="input-group" style="display: none; margin-bottom: 12px;">
-            <label id="authDisplayNameLabel" class="input-label" for="authDisplayNameInput">Tvoje ime (muzičar):</label>
-            <input type="text" id="authDisplayNameInput" class="settings-input" placeholder="Npr. Marko Basista">
+        <!-- #NOVO v1.4.05 - Dvojezičnost na ekranu za prijavu i prebacivanje pre same registracije -->
+        <div class="auth-lang-selector" style="display: flex; gap: 8px; justify-content: flex-end; margin-bottom: 20px;">
+            <button id="auth-lang-sr" class="btn-lang" onclick="setLanguage('sr')">SR</button>
+            <button id="auth-lang-en" class="btn-lang" onclick="setLanguage('en')">EN</button>
         </div>
 
-        <div class="input-group" style="margin-bottom: 12px;">
-            <label id="authEmailLabel" class="input-label" for="authEmailInput">Email adresa:</label>
-            <input type="email" id="authEmailInput" class="settings-input" placeholder="ime@gmail.com">
+        <!-- Glavna login/register forma -->
+        <div id="authMainForm">
+            <h2 id="authTitle" class="auth-title">🔑 Prijavljivanje</h2>
+            
+            <div id="authDisplayNameGroup" class="input-group" style="display: none; margin-bottom: 12px;">
+                <label id="authDisplayNameLabel" class="input-label" for="authDisplayNameInput">Tvoje ime (muzičar):</label>
+                <input type="text" id="authDisplayNameInput" class="settings-input" placeholder="Npr. Marko Basista">
+            </div>
+
+            <div class="input-group" style="margin-bottom: 12px;">
+                <label id="authEmailLabel" class="input-label" for="authEmailInput">Email adresa:</label>
+                <input type="email" id="authEmailInput" class="settings-input" placeholder="ime@gmail.com">
+            </div>
+
+            <div class="input-group" style="margin-bottom: 15px;">
+                <label id="authPasswordLabel" class="input-label" for="authPasswordInput">Lozinka:</label>
+                <input type="password" id="authPasswordInput" class="settings-input" placeholder="Najmanje 6 karaktera">
+            </div>
+
+            <button id="authSubmitBtn" class="btn-connect" style="width: 100%;" onclick="handleAuthSubmit()">Prijavi se</button>
+            
+            <div id="authSwitchLink" class="auth-switch-link" onclick="toggleAuthMode()">Nemate nalog? Registrujte se</div>
         </div>
 
-        <div class="input-group" style="margin-bottom: 15px;">
-            <label id="authPasswordLabel" class="input-label" for="authPasswordInput">Lozinka:</label>
-            <input type="password" id="authPasswordInput" class="settings-input" placeholder="Najmanje 6 karaktera">
+        <!-- #NOVO v1.4.05 - Ekran za neposrednu verifikaciju e-mail koda (OTP) na istom ekranu -->
+        <div id="authVerificationForm" style="display: none;">
+            <h2 id="verificationTitle" class="auth-title">📩 Potvrdi Email</h2>
+            <p id="verificationText" style="font-size: 0.85em; color: #9ca3af; margin-bottom: 20px; text-align: center; line-height: 1.5;"></p>
+            
+            <div class="input-group" style="margin-bottom: 20px;">
+                <label id="verificationCodeLabel" class="input-label" for="verificationCodeInput">Aktivacioni kod:</label>
+                <input type="text" id="verificationCodeInput" class="settings-input" placeholder="Npr. 123456" style="text-align: center; letter-spacing: 4px; font-size: 1.3em; font-family: monospace;">
+            </div>
+            
+            <button id="verificationSubmitBtn" class="btn-connect" style="width: 100%; margin-bottom: 12px;" onclick="handleVerificationSubmit()">Potvrdi i prijavi se</button>
+            <button id="verificationBackBtn" class="btn-band-action" style="width: 100%; background: transparent; border: 1px solid #374151; color: #9ca3af; font-size: 0.85em;" onclick="cancelVerification()">◀ Nazad na registraciju</button>
         </div>
-
-        <button id="authSubmitBtn" class="btn-connect" style="width: 100%;" onclick="handleAuthSubmit()">Prijavi se</button>
-        
-        <div id="authSwitchLink" class="auth-switch-link" onclick="toggleAuthMode()">Nemate nalog? Registrujte se</div>
     </div>
 
     <!-- TROSLOJNI GLAVNI KONTEJNER (Prikazuje se samo ulogovanim korisnicima) -->
@@ -49,7 +72,7 @@
         <div id="appSidebar" class="sidebar">
             <div class="sidebar-header">
                 <span class="sidebar-logo">GigStems</span>
-                <p id="subtitleText" class="subtitle">v1.4.04</p>
+                <p id="subtitleText" class="subtitle">v1.4.05</p>
                 <div class="sidebar-divider"></div>
             </div>
 
@@ -364,6 +387,7 @@
         // Pamćenje i učitavanje izabranog jezika iz Local Storage-a
         let currentLang = localStorage.getItem('gigstems_lang') || 'sr';
         let isRegisterMode = false;
+        let registeredEmail = ""; // #NOVO v1.4.05 - Za pamćenje email-a tokom registracije radi verifikacije
 
         // DOM elementi
         const playBtn = document.getElementById('playBtn');
@@ -394,6 +418,9 @@
             } else {
                 appContainer.style.display = "none";
                 authContainer.style.display = "block";
+                // #NOVO v1.4.05 - Osigurajmo prikaz glavnog login ekrana umesto verifikacije pri odjavljivanju
+                document.getElementById('authMainForm').style.display = "block";
+                document.getElementById('authVerificationForm').style.display = "none";
                 resetAudioState();
             }
         });
@@ -445,7 +472,7 @@
             }
         }
 
-        // Slanje forme za prijavu/registraciju na server
+        // #NOVO v1.4.05 - Slanje forme za prijavu/registraciju sa podrškom za OTP na istom ekranu
         async function handleAuthSubmit() {
             const email = document.getElementById('authEmailInput').value.trim();
             const password = document.getElementById('authPasswordInput').value.trim();
@@ -471,9 +498,15 @@
                 if (error) {
                     alert(i18n[currentLang].authError.replace("{msg}", error.message));
                 } else {
-                    alert(i18n[currentLang].authSuccessRegister);
-                    isRegisterMode = false;
-                    toggleAuthMode();
+                    // Sačuvajmo email za potrebe OTP verifikacije
+                    registeredEmail = email;
+                    // Prebaci se na verifikacioni ekran umesto na login
+                    document.getElementById('authMainForm').style.display = "none";
+                    document.getElementById('authVerificationForm').style.display = "block";
+                    document.getElementById('verificationCodeInput').value = "";
+                    alert(currentLang === 'sr' ? 
+                        "Registracija uspešna! Poslat vam je 6-cifreni kod na e-mail. Unesite ga ispod:" : 
+                        "Registration successful! A 6-digit code has been sent to your email. Enter it below:");
                 }
             } else {
                 // Prijavljivanje na postojeći nalog
@@ -483,9 +516,48 @@
                 });
 
                 if (error) {
-                    alert(i18n[currentLang].authError.replace("{msg}", error.message));
+                    // #NOVO v1.4.05 - Pametan prelaz na verifikaciju ukoliko nalog nije potvrđen
+                    if (error.message.toLowerCase().includes("confirm") || error.message.toLowerCase().includes("verify")) {
+                        registeredEmail = email;
+                        document.getElementById('authMainForm').style.display = "none";
+                        document.getElementById('authVerificationForm').style.display = "block";
+                        document.getElementById('verificationCodeInput').value = "";
+                        alert(currentLang === 'sr' ? 
+                            "Vaš nalog nije verifikovan. Unesite aktivacioni kod iz e-maila:" : 
+                            "Your account is not verified. Please enter the activation code from your email:");
+                    } else {
+                        alert(i18n[currentLang].authError.replace("{msg}", error.message));
+                    }
                 }
             }
+        }
+
+        // #NOVO v1.4.05 - Potvrda OTP koda na istom ekranu
+        async function handleVerificationSubmit() {
+            const code = document.getElementById('verificationCodeInput').value.trim();
+            if (!code) {
+                alert(currentLang === 'sr' ? "Unesite aktivacioni kod!" : "Please enter the activation code!");
+                return;
+            }
+
+            const { data, error } = await supabaseClient.auth.verifyOtp({
+                email: registeredEmail,
+                token: code,
+                type: 'signup'
+            });
+
+            if (error) {
+                alert(i18n[currentLang].authError.replace("{msg}", error.message));
+            } else {
+                alert(i18n[currentLang].verificationSuccess);
+                // Sesija se automatski ažurira i onAuthStateChange otvara program!
+            }
+        }
+
+        // #NOVO v1.4.05 - Otkazivanje verifikacije i povratak na glavnu formu
+        function cancelVerification() {
+            document.getElementById('authVerificationForm').style.display = "none";
+            document.getElementById('authMainForm').style.display = "block";
         }
 
         // Odjavljivanje korisnika sa sistema
@@ -1615,6 +1687,22 @@
             currentLang = lang;
             localStorage.setItem('gigstems_lang', lang);
             
+            // #NOVO v1.4.05 - Ažuriranje dvojezičnosti na Auth / Login ekranu
+            document.getElementById('auth-lang-sr').classList.toggle('active', lang === 'sr');
+            document.getElementById('auth-lang-en').classList.toggle('active', lang === 'en');
+            
+            document.getElementById('authEmailLabel').innerText = i18n[lang].authEmail;
+            document.getElementById('authPasswordLabel').innerText = i18n[lang].authPassword;
+            document.getElementById('authDisplayNameLabel').innerText = i18n[lang].authDisplayName;
+            
+            // Verifikacioni ekran
+            document.getElementById('verificationTitle').innerText = i18n[lang].verificationTitle;
+            document.getElementById('verificationText').innerText = i18n[lang].verificationText;
+            document.getElementById('verificationCodeLabel').innerText = i18n[lang].verificationCodeLabel;
+            document.getElementById('verificationCodeInput').placeholder = i18n[lang].verificationCodePlaceholder;
+            document.getElementById('verificationSubmitBtn').innerText = i18n[lang].verificationSubmitBtn;
+            document.getElementById('verificationBackBtn').innerText = i18n[lang].verificationBackBtn;
+
             // Ažuriranje HTML tekstova
             document.getElementById('songsTitle').innerText = i18n[lang].songsTitle;
             document.getElementById('searchInput').placeholder = i18n[lang].searchPlaceholder;
