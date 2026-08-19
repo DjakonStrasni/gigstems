@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GigStems - Prototip v1.3.0</title>
+    <title>GigStems - Prototip v1.3.1</title>
     <!-- Poziv eksternog CSS-a radi očuvanja konzistentnosti dizajna -->
     <link rel="stylesheet" href="style.css">
     <!-- Eksterni fajl sa prevodima radi lakšeg uređivanja i lokalizacije -->
@@ -11,79 +11,123 @@
 </head>
 <body>
 
-    <h1>GigStems</h1>
-    <!-- ID za dinamički prevod podnaslova -->
-    <p id="subtitleText" class="subtitle">v1.3.0 • Google Drive Strimovanje</p>
+    <!-- Zatamnjenje ekrana za mobilni kada je otvoren klizni meni sa pesmama -->
+    <div id="sidebarOverlay" class="sidebar-overlay" onclick="toggleSidebar(false)"></div>
 
-    <!-- Jezički selektor na vrhu ekrana -->
-    <div class="lang-container">
-        <button id="lang-sr" class="btn-lang" onclick="setLanguage('sr')">SR</button>
-        <button id="lang-en" class="btn-lang" onclick="setLanguage('en')">EN</button>
-    </div>
+    <!-- Kontejner za celu aplikaciju koji spaja Sidebar i Glavni sadržaj -->
+    <div class="app-container">
 
-    <!-- #NOVO v1.3.0 - Sklopivi panel sa podešavanjima za povezivanje na Google Drive API -->
-    <details class="settings-panel" id="settingsPanel">
-        <summary id="settingsTitle">⚙️ Google Drive Podešavanja</summary>
-        <div class="settings-content">
-            <div class="input-group">
-                <label id="apiKeyLabel" for="apiKeyInput">API Ključ:</label>
-                <input type="password" id="apiKeyInput" class="settings-input" placeholder="Unesi Google API Key">
+        <!-- LEVA KOLONA: Sidebar (Pretraga, Lista pesama i Bendovi) -->
+        <div id="appSidebar" class="sidebar">
+            
+            <!-- Upravljanje bendovima ("Moji Bendovi" / "Moje Baze") -->
+            <div class="band-selector-zone">
+                <span id="activeBandLabel" class="input-label">Bend:</span>
+                <div class="band-row">
+                    <select id="bandSelect" class="band-select" onchange="onBandChanged(this.value)">
+                        <!-- Popunjava se dinamički iz localStorage-a -->
+                    </select>
+                    <button id="addBandBtn" class="btn-add-band" onclick="toggleAddBandPanel()">+ Novi</button>
+                </div>
+
+                <!-- Sklopiva forma za dodavanje novog benda sa pametnim unosem celog linka -->
+                <div id="addBandPanel" class="band-manager-panel" style="display: none;">
+                    <div class="input-group">
+                        <label id="bandNameLabel" class="input-label" for="newBandName">Naziv benda:</label>
+                        <input type="text" id="newBandName" class="settings-input" placeholder="Npr. Bendover">
+                    </div>
+                    <div class="input-group" style="margin-top: 5px;">
+                        <label id="bandUrlLabel" class="input-label" for="newBandUrl">Google Drive Link Foldera:</label>
+                        <input type="text" id="newBandUrl" class="settings-input" placeholder="Nalepi ceo URL drajv foldera">
+                    </div>
+                    <button id="connectBtn" class="btn-connect" onclick="addNewBandSubmit()" style="margin-top: 8px;">Dodaj bend</button>
+                    <button id="deleteBandBtn" class="btn-delete-band" onclick="deleteActiveBand()" style="margin-top: 5px; background: #ef4444; color: white;">Obriši trenutni bend</button>
+                </div>
             </div>
-            <div class="input-group">
-                <label id="folderIdLabel" for="folderIdInput">ID Root Foldera:</label>
-                <!-- Podrazumevani ID je tvoj testni krovni folder prosleđen u izvoru -->
-                <input type="text" id="folderIdInput" class="settings-input" value="1uUxKmjU6MgmsLCk5jSUrA29m4SkkShGA" placeholder="Unesi Google Drive Folder ID">
+
+            <!-- Polje za brzu pretragu / filtriranje pesama sa drajva -->
+            <div class="search-container">
+                <input type="text" id="searchInput" class="search-input" placeholder="🔍 Pretraži pesmu..." oninput="filterSongs(this.value)">
             </div>
-            <button id="connectBtn" class="btn-connect" onclick="connectToDrive()">Poveži se</button>
-        </div>
-    </details>
 
-    <!-- #NOVO v1.3.0 - Padajući meni za dinamički izbor pesama sa drajva -->
-    <div class="song-selector-container">
-        <label id="songSelectLabel" class="song-selector-label" for="songSelect">Izaberi pesmu iz drajva:</label>
-        <select id="songSelect" class="song-select" onchange="onSongChanged(this.value)" disabled>
-            <option id="selectSongDefault" value="">-- Izaberi pesmu --</option>
-        </select>
-    </div>
-
-    <!-- Kontrolna Tabla -->
-    <div class="controls-master">
-        <div class="buttons-row">
-            <!-- Pusti i Zaustavi kontrole -->
-            <button id="playBtn" class="btn-play" onclick="togglePlay()" disabled style="width: 60%;">
-                <span>▶ Pusti trake</span>
-            </button>
-            <button id="stopBtn" class="btn-stop" onclick="stopAudio()" disabled style="width: 35%;">
-                <span>◼ Zaustavi</span>
-            </button>
-        </div>
-
-        <!-- Globalne (Master) kontrole jačine zvuka i mute u krovnoj tabli -->
-        <div class="master-volume-container">
-            <button id="masterMuteBtn" class="btn-mute" onclick="toggleMasterMute()" style="width: auto; padding: 6px 12px;">UTIŠAJ SVE</button>
-            <div class="volume-slider-container" style="flex-grow: 1; display: flex; align-items: center; justify-content: flex-end; margin-left: 10px;">
-                <span id="masterVolLabel" class="master-vol-label">MASTER:</span>
-                <input type="range" id="masterVolumeSlider" class="volume-slider" min="0" max="1" step="0.01" value="0.8" oninput="setMasterVolume(this.value)" style="margin-left: 10px; width: 100%;">
+            <!-- Naslov i Dinamički spisak pesama -->
+            <div class="songs-title-container">
+                <span id="songsTitle" class="songs-title">📋 Spisak Pesama</span>
+            </div>
+            <div id="songsList" class="songs-list">
+                <!-- Pesme se iscrtavaju ovde kao klikabilne stavke -->
             </div>
         </div>
 
-        <div class="seekbar-container" style="margin-top: 12px;">
-            <input type="range" id="seekBar" class="seekbar" min="0" max="100" value="0" oninput="onSeek(this.value)">
+        <!-- DESNA KOLONA: Glavni radni prostor (Plejer, Mikseta) -->
+        <div class="main-content">
+            
+            <!-- Zaglavlje sa naslovom i jezičkim kontrolama -->
+            <div class="app-header">
+                <div>
+                    <h1>GigStems</h1>
+                    <p id="subtitleText" class="subtitle">v1.3.1 • Google Drive Repertoar</p>
+                </div>
+                
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <!-- Dugme za otvaranje repertoara na mobilnim telefonima -->
+                    <button id="mobileToggleBtn" class="mobile-toggle-btn" onclick="toggleSidebar(true)">📋 Pesme</button>
+                    
+                    <div class="lang-container">
+                        <button id="lang-sr" class="btn-lang" onclick="setLanguage('sr')">SR</button>
+                        <button id="lang-en" class="btn-lang" onclick="setLanguage('en')">EN</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Kontrolna Tabla Plejera -->
+            <div class="controls-master">
+                <div class="buttons-row">
+                    <button id="playBtn" class="btn-play" onclick="togglePlay()" disabled style="width: 60%;">
+                        <span>▶ Pusti trake</span>
+                    </button>
+                    <button id="stopBtn" class="btn-stop" onclick="stopAudio()" disabled style="width: 35%;">
+                        <span>◼ Zaustavi</span>
+                    </button>
+                </div>
+
+                <!-- Globalne (Master) kontrole jačine zvuka i mute u krovnoj tabli -->
+                <div class="master-volume-container">
+                    <button id="masterMuteBtn" class="btn-mute" onclick="toggleMasterMute()" style="width: auto; padding: 6px 12px;">UTIŠAJ SVE</button>
+                    <div class="volume-slider-container" style="flex-grow: 1; display: flex; align-items: center; justify-content: flex-end; margin-left: 10px;">
+                        <span id="masterVolLabel" class="master-vol-label">MASTER:</span>
+                        <input type="range" id="masterVolumeSlider" class="volume-slider" min="0" max="1" step="0.01" value="0.8" oninput="setMasterVolume(this.value)" style="margin-left: 10px; width: 100%;">
+                    </div>
+                </div>
+
+                <div class="seekbar-container" style="margin-top: 12px;">
+                    <input type="range" id="seekBar" class="seekbar" min="0" max="100" value="0" oninput="onSeek(this.value)">
+                </div>
+
+                <div class="time-container">
+                    <span id="currentTime">00:00</span>
+                    <span id="totalTime">00:00</span>
+                </div>
+            </div>
+
+            <!-- Status Učitavanja i Sinhronizacije -->
+            <div id="statusLabel" class="status-box">Izaberi pesmu sa leve strane da započneš...</div>
+
+            <!-- Mikseta -->
+            <div id="mixerContainer" class="mixer"></div>
         </div>
 
-        <div class="time-container">
-            <span id="currentTime">00:00</span>
-            <span id="totalTime">00:00</span>
-        </div>
     </div>
-
-    <!-- Status Učitavanja i Sinhronizacije -->
-    <div id="statusLabel" class="status-box">Poveži Google Drive u podešavanjima ili izaberi pesmu da započneš...</div>
-
-    <!-- Mikseta -->
-    <div id="mixerContainer" class="mixer"></div>
 
     <script>
+        // ==========================================================================
+        // GIGSTEMS AUDIO ENGINE & CONTROL LOGIC (v1.3.1)
+        // ==========================================================================
+
+        // TVOJ BEZBEDNI API KLJUČ (Ograničen na tvoj GitHub Pages domen)
+        // Kada uneseš svoj API ključ ovde, niko od članova benda nikada više neće morati da unosi ključeve!
+        const GIGSTEMS_API_KEY = "AIzaSyBiq4QbYuCtVyy9_-dJTCTcCtPfwZc-Gu8";
+
         // Inicijalizacija Web Audio API-ja i globalnih promenljivih
         let audioCtx;
         let audioBuffers = [];
@@ -100,8 +144,9 @@
         let masterGainNode; 
         let isMasterMuted = false;
 
-        // Promenljiva za identifikaciju trenutno učitane pesme radi pamćenja miksa
+        // Promenljive za upravljanje pesmama i pretragom
         let currentSongName = "";
+        let allSongs = []; // Lista svih foldera/pesama iz aktivnog drajva
 
         // Pamćenje i učitavanje izabranog jezika iz Local Storage-a
         let currentLang = localStorage.getItem('gigstems_lang') || 'sr';
@@ -109,15 +154,24 @@
         const playBtn = document.getElementById('playBtn');
         const stopBtn = document.getElementById('stopBtn');
         const statusLabel = document.getElementById('statusLabel');
+        const songsList = document.getElementById('songsList');
+        const bandSelect = document.getElementById('bandSelect');
 
-        // #NOVO v1.3.0 - Selektori za Google Drive elemente
-        const apiKeyInput = document.getElementById('apiKeyInput');
-        const folderIdInput = document.getElementById('folderIdInput');
-        const songSelect = document.getElementById('songSelect');
+        // Inicijalizacija liste bendova sa uključenom default testnom bazom ("Fankomatik Test")
+        const defaultBands = [
+            { id: 'default_fankomatik', name: 'Fankomatik Test', folderId: '1uUxKmjU6MgmsLCk5jSUrA29m4SkkShGA' }
+        ];
+        let bands = JSON.parse(localStorage.getItem('gigstems_bands'));
+        if (!bands || bands.length === 0) {
+            bands = defaultBands;
+            localStorage.setItem('gigstems_bands', JSON.stringify(bands));
+        }
+        let activeBandId = localStorage.getItem('gigstems_active_band') || 'default_fankomatik';
 
         // Automatsko pokretanje čim se stranica otvori
         window.onload = () => {
             setLanguage(currentLang);
+            renderBandsUI();
 
             // Postavljanje inicijalne vrednosti master klizača iz localStorage
             const savedMasterVol = localStorage.getItem('gigstems_master_volume');
@@ -125,17 +179,8 @@
                 document.getElementById('masterVolumeSlider').value = savedMasterVol;
             }
 
-            // #NOVO v1.3.0 - Automatsko popunjavanje sačuvanih mrežnih parametara iz localStorage
-            const savedApiKey = localStorage.getItem('gigstems_api_key');
-            const savedFolderId = localStorage.getItem('gigstems_folder_id');
-            
-            if (savedApiKey) apiKeyInput.value = savedApiKey;
-            if (savedFolderId) folderIdInput.value = savedFolderId;
-
-            // Ako imamo sačuvane parametre, odmah pokrećemo povezivanje radi ugodnosti korisnika
-            if (savedApiKey && savedFolderId) {
-                connectToDrive();
-            }
+            // Automatski pokrećemo učitavanje repertoara za aktivni bend
+            loadSongsFromActiveBand();
         };
 
         // Funkcija za dinamičku promenu jezika na celom interfejsu bez osvežavanja stranice
@@ -154,24 +199,23 @@
             document.getElementById('masterMuteBtn').innerText = i18n[lang].masterMuteBtn;
             document.getElementById('masterVolLabel').innerText = i18n[lang].masterVolLabel;
 
-            // #NOVO v1.3.0 - Prevod Google Drive elemenata
-            document.getElementById('settingsTitle').innerText = i18n[lang].settingsTitle;
-            document.getElementById('apiKeyLabel').innerText = i18n[lang].apiKeyLabel;
-            document.getElementById('folderIdLabel').innerText = i18n[lang].folderIdLabel;
+            // Prevod upravljača bendovima i pretrage
+            document.getElementById('activeBandLabel').innerText = i18n[lang].activeBandLabel;
+            document.getElementById('addBandBtn').innerText = i18n[lang].addBandBtn;
+            document.getElementById('bandNameLabel').innerText = i18n[lang].bandNameLabel;
+            document.getElementById('bandUrlLabel').innerText = i18n[lang].bandUrlLabel;
             document.getElementById('connectBtn').innerText = i18n[lang].connectBtn;
-            document.getElementById('songSelectLabel').innerText = i18n[lang].songSelectLabel;
-            document.getElementById('selectSongDefault').innerText = i18n[lang].selectSongDefault;
+            document.getElementById('deleteBandBtn').innerText = i18n[lang].deleteBtn + " " + i18n[lang].activeBandLabel.toLowerCase().replace(":", "");
+            document.getElementById('searchInput').placeholder = i18n[lang].searchPlaceholder;
+            document.getElementById('songsTitle').innerText = i18n[lang].songsTitle;
+            document.getElementById('mobileToggleBtn').innerText = "📋 " + i18n[lang].songsTitle.split(" ").slice(1).join(" ");
 
             // Prevodimo play/pause taster
             updatePlayBtnUI();
 
             // Prevodimo trenutni status u zavisnosti od stanja audio buffera
             if (audioBuffers.length === 0) {
-                if (songSelect.options.length > 1) {
-                    updateStatusText('statusConnected');
-                } else {
-                    updateStatusText('statusInit');
-                }
+                updateStatusText('statusInit');
             } else {
                 updateStatusText('statusReady', audioBuffers.length);
             }
@@ -195,71 +239,185 @@
             }
         }
 
-        // #NOVO v1.3.0 - Povezivanje na Google Drive i preuzimanje liste pesama (podfoldera)
-        async function connectToDrive() {
-            const apiKey = apiKeyInput.value.trim();
-            const rootFolderId = folderIdInput.value.trim();
+        // Iscrtavanje liste bendova u dropdown-u
+        function renderBandsUI() {
+            bandSelect.innerHTML = "";
+            bands.forEach(band => {
+                const opt = document.createElement('option');
+                opt.value = band.id;
+                opt.innerText = band.name;
+                opt.selected = (band.id === activeBandId);
+                bandSelect.appendChild(opt);
+            });
+        }
 
-            if (!apiKey || !rootFolderId) {
-                alert(currentLang === 'sr' ? "Molimo unesi i API Ključ i ID Root Foldera!" : "Please enter both API Key and Root Folder ID!");
+        // Sklopivi/rasklopivi panel za dodavanje bendova
+        function toggleAddBandPanel() {
+            const panel = document.getElementById('addBandPanel');
+            panel.style.display = (panel.style.display === "none") ? "flex" : "none";
+        }
+
+        // Pametni Regular Expression parser koji izvlači ID foldera iz celog Google Drive URL-a
+        function extractFolderId(urlOrId) {
+            const regExp = /[-\w]{25,}/;
+            const match = urlOrId.match(regExp);
+            return match ? match : urlOrId;
+        }
+
+        // Dodavanje novog benda u listu
+        function addNewBandSubmit() {
+            const nameInput = document.getElementById('newBandName');
+            const urlInput = document.getElementById('newBandUrl');
+
+            const name = nameInput.value.trim();
+            const rawUrl = urlInput.value.trim();
+
+            if (!name || !rawUrl) {
+                alert(currentLang === 'sr' ? "Popuni sva polja!" : "Please fill out all fields!");
                 return;
             }
 
-            // Snimamo parametre u localStorage
-            localStorage.setItem('gigstems_api_key', apiKey);
-            localStorage.setItem('gigstems_folder_id', rootFolderId);
+            const folderId = extractFolderId(rawUrl);
 
-            updateStatusText('statusConnecting');
-            songSelect.disabled = true;
+            // Kreiramo novi bend
+            const newBand = {
+                id: 'band_' + Date.now(),
+                name: name,
+                folderId: folderId
+            };
 
-            // Formiramo upit za Google Drive API v3 koji traži samo foldere unutar našeg root foldera
-            const query = `'${rootFolderId}' in parents and mimeType = 'application/vnd.google-apps.folder' and trashed = false`;
-            const url = `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(query)}&fields=files(id,name)&key=${apiKey}`;
+            bands.push(newBand);
+            localStorage.setItem('bands', JSON.stringify(bands));
+
+            activeBandId = newBand.id;
+            localStorage.setItem('active_band', activeBandId);
+
+            // Čistimo formu i sklapamo je
+            nameInput.value = "";
+            urlInput.value = "";
+            document.getElementById('addBandPanel').style.display = "none";
+
+            renderBandsUI();
+            loadSongsFromActiveBand();
+        }
+
+        // Brisanje aktivnog benda
+        function deleteActiveBand() {
+            if (bands.length <= 1) {
+                alert(currentLang === 'sr' ? "Mora postojati bar jedan bend u listi!" : "There must be at least one band in the list!");
+                return;
+            }
+
+            const confirmMsg = i18n[currentLang].deleteBandConfirm;
+            if (!confirm(confirmMsg)) return;
+
+            bands = bands.filter(b => b.id !== activeBandId);
+            localStorage.setItem('bands', JSON.stringify(bands));
+
+            activeBandId = bands.id;
+            localStorage.setItem('active_band', activeBandId);
+
+            document.getElementById('addBandPanel').style.display = "none";
+            renderBandsUI();
+            loadSongsFromActiveBand();
+        }
+
+        // Akcija pri izmeni aktivnog benda u dropdownu
+        function onBandChanged(newId) {
+            activeBandId = newId;
+            localStorage.setItem('active_band', activeBandId);
+            
+            // Zaustavljamo reprodukciju i čistimo stari mikser
+            stopAudio();
+            document.getElementById('mixerContainer').innerHTML = "";
+            
+            loadSongsFromActiveBand();
+        }
+
+        // Povezivanje na drajv aktivnog benda i osvežavanje repertoara
+        async function loadSongsFromActiveBand() {
+            const activeBand = bands.find(b => b.id === activeBandId);
+            if (!activeBand) return;
+
+            if (GIGSTEMS_API_KEY === "UPISI_OVDE_SVOJ_API_KLJUC") {
+                songsList.innerHTML = `<div style="padding:15px; color:#ef4444; font-size:0.85em; text-align:center;">Unesi svoj Google API ključ u kod (linija ~143 u index.html) da bi učitao pesme sa Drive-a!</div>`;
+                return;
+            }
+
+            songsList.innerHTML = `<div style="padding:15px; text-align:center; color:#94a3b8;">${i18n[currentLang].statusConnecting}</div>`;
+            
+            // Upit za povlačenje podfoldera iz aktivnog krovnog foldera benda
+            const query = `'${activeBand.folderId}' in parents and mimeType = 'application/vnd.google-apps.folder' and trashed = false`;
+            const url = `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(query)}&fields=files(id,name)&key=${GIGSTEMS_API_KEY}`;
 
             try {
                 const response = await fetch(url);
-                if (!response.ok) throw new Error("Mrežna greška sa Drive API-jem");
-                
+                if (!response.ok) throw new Error("Mrežni problem sa Drive API-jem");
+
                 const data = await response.json();
-                const folders = data.files || [];
+                allSongs = data.files || [];
 
-                // Čistimo stare opcije i popunjavamo novim pesmama
-                songSelect.innerHTML = `<option id="selectSongDefault" value="">${i18n[currentLang].selectSongDefault}</option>`;
-                
-                // Sortiramo pesme abecedno radi lakše pretrage
-                folders.sort((a, b) => a.name.localeCompare(b.name));
+                // Sortiramo pesme abecedno
+                allSongs.sort((a, b) => a.name.localeCompare(b.name));
 
-                folders.forEach(folder => {
-                    const opt = document.createElement('option');
-                    opt.value = folder.id;
-                    opt.innerText = folder.name;
-                    songSelect.appendChild(opt);
-                });
-
-                songSelect.disabled = false;
-                updateStatusText('statusConnected');
-
-                // Sklapamo panel podešavanja nakon uspešnog povezivanja radi čistijeg ekrana
-                document.getElementById('settingsPanel').removeAttribute('open');
-
+                renderSongsList(allSongs);
             } catch (err) {
-                updateStatusText('statusConnError');
-                console.error("Greška pri povezivanju na Drive:", err);
+                songsList.innerHTML = `<div style="padding:15px; color:#ef4444; font-size:0.85em; text-align:center;">${i18n[currentLang].statusConnError}</div>`;
+                console.error("Greška pri učitavanju pesama:", err);
             }
         }
 
-        // #NOVO v1.3.0 - Osluškivač za promenu izabrane pesme u padajućem meniju
-        async function onSongChanged(songFolderId) {
-            if (!songFolderId) {
-                stopAudio();
-                updateStatusText('statusConnected');
-                document.getElementById('mixerContainer').innerHTML = '';
+        // Prikaz pesama u Sidebar listi
+        function renderSongsList(songsArray) {
+            songsList.innerHTML = "";
+            
+            if (songsArray.length === 0) {
+                songsList.innerHTML = `<div style="padding:15px; text-align:center; color:#94a3b8;">${i18n[currentLang].noSongs}</div>`;
                 return;
             }
 
-            const apiKey = apiKeyInput.value.trim();
+            songsArray.forEach(song => {
+                const div = document.createElement('div');
+                div.className = "song-item";
+                div.innerText = song.name;
+                div.id = `song-item-${song.id}`;
+                div.onclick = () => loadSongStems(song.id, song.name);
+                songsList.appendChild(div);
+            });
+        }
 
-            // Zaustavljamo prethodni audio, čistimo stare buffere i miksetu
+        // Brzi filter pretrage pesama na osnovu unetog teksta (Live Search)
+        function filterSongs(queryText) {
+            const query = queryText.toLowerCase().trim();
+            const filtered = allSongs.filter(song => song.name.toLowerCase().includes(query));
+            renderSongsList(filtered);
+        }
+
+        // Klizno otvaranje/zatvaranje Repertoar menija na telefonima
+        function toggleSidebar(isOpen) {
+            const sidebar = document.getElementById('appSidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+
+            if (isOpen) {
+                sidebar.classList.add('open');
+                overlay.classList.add('open');
+            } else {
+                sidebar.classList.remove('open');
+                overlay.classList.remove('open');
+            }
+        }
+
+        // Glavni asinhroni pokretač učitavanja pesama
+        async function loadSongStems(songFolderId, songName) {
+            // Ako smo na mobilnom, zatvaramo klizni meni čim izaberemo pesmu radi boljeg UX
+            toggleSidebar(false);
+
+            // Vizuelno označavamo izabranu pesmu u listi kao aktivnu
+            document.querySelectorAll('.song-item').forEach(el => el.classList.remove('active'));
+            const activeEl = document.getElementById(`song-item-${songFolderId}`);
+            if (activeEl) activeEl.classList.add('active');
+
+            // Zaustavljamo prethodni audio, čistimo buffere i miksetu
             stopAudio();
             updateStatusText('statusLoading');
             playBtn.disabled = true;
@@ -283,13 +441,11 @@
             trackNames = [];
             gainNodes = [];
             totalDuration = 0;
-
-            // Pamti ime pesme (uzimamo tekst selektovane opcije iz dropdown-a)
-            currentSongName = songSelect.options[songSelect.selectedIndex].text;
+            currentSongName = songName;
 
             // Formiramo upit za Google Drive API v3 koji traži samo audio fajlove unutar podfoldera izabrane pesme
             const query = `'${songFolderId}' in parents and trashed = false and (mimeType contains 'audio/' or name contains '.mp3' or name contains '.wav' or name contains '.m4a')`;
-            const url = `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(query)}&fields=files(id,name)&key=${apiKey}`;
+            const url = `https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(query)}&fields=files(id,name)&key=${GIGSTEMS_API_KEY}`;
 
             try {
                 const response = await fetch(url);
@@ -304,7 +460,7 @@
                     return;
                 }
 
-                // Sortiranje fajlova po imenu kako bismo uvek imali isti raspored kanala
+                // Sortiranje fajlova po imenu
                 files.sort((a, b) => a.name.localeCompare(b.name));
 
                 // Prolazimo kroz sve fajlove, preuzimamo binarne podatke i dekodiramo ih direktno u RAM memoriju
@@ -313,11 +469,11 @@
                     statusLabel.innerText = `${i18n[currentLang].statusDecoding} [${i + 1}/${files.length}]: ${file.name}...`;
 
                     // Pozivamo Google Drive API media endpoint za preuzimanje samog audio fajla (bita)
-                    const fileUrl = `https://www.googleapis.com/drive/v3/files/${file.id}?alt=media&key=${apiKey}`;
+                    const fileUrl = `https://www.googleapis.com/drive/v3/files/${file.id}?alt=media&key=${GIGSTEMS_API_KEY}`;
                     const fileResponse = await fetch(fileUrl);
                     
                     if (!fileResponse.ok) {
-                        throw new Error(`HTTP greška! status: ${fileResponse.status} na fajlu ${file.name}`);
+                        throw new Error("HTTP greška pri preuzimanju");
                     }
 
                     const arrayBuffer = await fileResponse.arrayBuffer();
@@ -326,14 +482,12 @@
                     audioBuffers.push(decodedData);
                     
                     // Funkcija za prečišćavanje naziva traka (sklanja ekstenzije i početne brojeve npr. 01_bass -> bass)
-                    let cleanName = file.name.replace(/\.[^/.]+$/, ""); // uklanja ekstenziju (.mp3, .wav...)
-                    cleanName = cleanName.replace(/^\d+[\s_.-]*/, ""); // uklanja brojeve i znakove sa početka (01_, 02-, itd.)
-                    // Prvo slovo veliko radi lepše estetike miksete
+                    let cleanName = file.name.replace(/\.[^/.]+$/, ""); // uklanja ekstenziju
+                    cleanName = cleanName.replace(/^\d+[\s_.-]*/, ""); // uklanja brojeve i znakove sa početka
                     cleanName = cleanName.charAt(0).toUpperCase() + cleanName.slice(1);
                     
                     trackNames.push(cleanName);
 
-                    // Određujemo najdužu traku kao ukupnu dužinu cele pesme
                     if (decodedData.duration > totalDuration) {
                         totalDuration = decodedData.duration;
                     }
@@ -342,7 +496,6 @@
                 updateStatusText('statusReady', files.length);
                 document.getElementById('totalTime').innerText = formatTime(totalDuration);
                 
-                // Dinamički gradimo miksetu sa tačnim brojem učitanih traka
                 buildMixer();
                 
                 playBtn.disabled = false;
@@ -373,11 +526,9 @@
             }
 
             trackNames.forEach((name, index) => {
-                // Vraćamo sačuvano stanje za ovu traku, ili postavljamo standardne početne nivoe
                 const trackPreset = savedMix[name] || { volume: 0.8, muted: false, solo: false };
 
                 const gainNode = audioCtx.createGain();
-                // Inicijalna jačina (biće precizno podešena i sinhronizovana kroz applyGainsFromUI)
                 gainNode.gain.value = trackPreset.muted ? 0 : trackPreset.volume;
                 gainNodes.push(gainNode);
 
@@ -398,7 +549,6 @@
                 container.appendChild(strip);
             });
 
-            // Centralno primenjujemo sve gain nivoe i rešavamo potencijalne Solo/Mute konflikte
             applyGainsFromUI();
         }
 
@@ -537,7 +687,6 @@
                 const source = audioCtx.createBufferSource();
                 source.buffer = buffer;
                 
-                // Povezujemo izvor na kanalni Gain, a kanalni Gain na krovni master regulator (masterGainNode)
                 source.connect(gainNodes[index]);
                 gainNodes[index].connect(masterGainNode);
                 
