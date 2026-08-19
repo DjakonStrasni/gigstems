@@ -1,5 +1,5 @@
 // ==========================================================================
-// GIGSTEMS TRANSLATIONS - VERZIJA 1.4.04
+// GIGSTEMS TRANSLATIONS - VERZIJA 1.4.05
 // ==========================================================================
 
 const i18n = {
@@ -83,6 +83,15 @@ const i18n = {
         onlyAdminEditMsg: "Samo Šef / Admin benda može menjati drajv link ili brisati bend.",
         
         duplicateNameError: "Bend sa tim nazivom već postoji u bazi!",
+        
+        // #NOVO v1.4.05 - Verifikacija email adrese
+        verificationTitle: "📩 Potvrdi Email",
+        verificationText: "Poslat vam je 6-cifreni kod na e-mail. Unesite ga ispod da biste aktivirali nalog:",
+        verificationCodeLabel: "Aktivacioni kod:",
+        verificationCodePlaceholder: "Npr. 123456",
+        verificationSubmitBtn: "Potvrdi i prijavi se",
+        verificationBackBtn: "◀ Nazad na registraciju",
+        verificationSuccess: "Uspešna verifikacija! Dobrodošli!",
         duplicateUrlError: "Ovaj Google Drive folder je već unet!",
         emptyNameError: "Naziv ne može biti prazan!"
     },
@@ -166,6 +175,15 @@ const i18n = {
         onlyAdminEditMsg: "Only the Band Leader / Admin can change the Drive link or delete the band.",
         
         duplicateNameError: "A band with this name already exists in the database!",
+        
+        // #NOVO v1.4.05 - Email verification
+        verificationTitle: "📩 Verify Email",
+        verificationText: "A 6-digit code has been sent to your email. Enter it below to activate your account:",
+        verificationCodeLabel: "Activation code:",
+        verificationCodePlaceholder: "E.g. 123456",
+        verificationSubmitBtn: "Verify & Log In",
+        verificationBackBtn: "◀ Back to registration",
+        verificationSuccess: "Verification successful! Welcome!",
         duplicateUrlError: "This Google Drive folder is already imported!",
         emptyNameError: "Name cannot be empty!"
     }
