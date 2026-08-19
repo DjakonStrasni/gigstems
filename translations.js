@@ -1,88 +1,172 @@
-/**
- * ==========================================================================
- * GIGSTEMS TRANSLATION DICTIONARY (translations.js)
- * v1.3.7 • Zaseban fajl sa prevodima radi lakšeg uređivanja i lokalizacije
- * ==========================================================================
- */
+// ==========================================================================
+// GIGSTEMS TRANSLATIONS - VERZIJA 1.4.0
+// ==========================================================================
 
 const i18n = {
     sr: {
-        subtitle: "v1.3.7 • Repertoar, Drag & Drop Mikseta i Menadžment",
-        playBtn: "Pusti trake",
-        pauseBtn: "Pauziraj",
+        subtitle: "v1.4.0 • Cloud Sinhronizacija & Članstvo",
         stopBtn: "Zaustavi",
+        playBtn: "Pusti trake",
+        pauseBtn: "Pauza",
         masterMuteBtn: "UTIŠAJ SVE",
         masterVolLabel: "MASTER:",
-        activeBandLabel: "Bend:",
+        activeBandLabel: "Aktivni bend:",
         addBandBtn: "Upravljaj",
         bandNameLabel: "Naziv novog benda:",
         bandUrlLabel: "Google Drive Link Foldera:",
         connectBtn: "Dodaj novi bend",
-        deleteBandBtnText: "❌ Obriši bend: {name}",
-        deleteBandConfirm: "Da li ste sigurni da želite da obrišete ovaj bend i sve njegove podatke?",
         searchPlaceholder: "🔍 Pretraži pesmu...",
         songsTitle: "📋 Spisak Pesama",
-        selectBandPlaceholder: "-- Bez benda --",
+        
+        // Menadžment bendova
         editSectionTitle: "✏️ Uredi Aktivni Bend",
         addSectionTitle: "➕ Dodaj Novi Bend",
         deleteSectionTitle: "🗑️ Obriši Aktivni Bend",
-        deleteSectionText: "Da li sigurno želiš da obrišeš bend {name}? Sve pesme i sačuvane jačine kanala će biti obrisane.",
         renameBandLabel: "Naziv trenutnog benda:",
         renameBandUrlLabel: "Link Drive foldera:",
         renameBtn: "Sačuvaj izmene",
-        noBands: "Nema sačuvanih bendova. Dodaj novi u panelu 'Upravljaj'.",
+        deleteBandConfirm: "Da li sigurno želiš da obrišeš ovaj bend? Sve pesme i sačuvani miksevi iz baze će biti trajno uklonjeni!",
+        deleteBandBtnText: "❌ Obriši bend: {name}",
+        deleteSectionText: "Upozorenje! Brisanjem benda '{name}', brišu se i svi njegovi članovi i sačuvani miksevi pesama.",
+        selectBandPlaceholder: "-- Bez benda --",
+        noBands: "Nema sačuvanih bendova. Osnuj svoj prvi bend sa leve strane!",
         noSongs: "Nema pronađenih pesama u ovom folderu.",
-        statusInit: "Izaberi pesmu sa leve strane da započneš...",
-        statusConnecting: "Povezujem se sa Google Drive-om...",
-        statusConnError: "Greška pri povezivanju sa Google Drive API-jem. Proveri ključ ili internet konekciju.",
-        statusLoading: "Učitavam audio fajlove u memoriju...",
-        statusDecoding: "Dekodiram audio",
-        statusReady: "Spremno! Učitano {count} traka.",
-        statusNoFiles: "Nema audio fajlova u izabranom folderu pesme!",
-        statusError: "Greška tokom učitavanja pesme.",
-        duplicateNameError: "Bend sa tim nazivom već postoji!",
-        duplicateUrlError: "Google Drive link je već unet za neki drugi bend!",
-        emptyNameError: "Naziv benda ne može biti prazan!",
-        apiKeyWarning: "Unesi svoj Google API ključ u kod (linija ~143 u index.html) da bi učitao pesme sa Drive-a!"
+        
+        // Audio Statusi
+        statusInit: "Prijavi se i izaberi pesmu da započneš...",
+        statusConnecting: "Povezujem se na Google Drive...",
+        statusConnError: "Greška pri učitavanju pesama sa drajva. Proveri link ili API ključ.",
+        statusLoading: "Preuzimanje audio traka u RAM...",
+        statusDecoding: "Dekodiranje trake",
+        statusReady: "Učitano traka: {count}. Spreman za binu!",
+        statusError: "Greška u Audio Engine-u tokom strimovanja.",
+        statusNoFiles: "Nema podržanih audio fajlova (.mp3, .wav, .m4a) u ovom folderu!",
+        apiKeyWarning: "Unesi svoj Google API ključ u kod (linija ~143 u index.html) da bi učitao pesme!",
+
+        // #NOVO v1.4.0 - Autentifikacija, Članstvo i SPA Meni
+        navBands: "🎸 Moji Bendovi",
+        navRepertoire: "🎵 Repertoar",
+        navCalendar: "📅 Kalendar",
+        
+        authTitleLogin: "🔑 Prijavljivanje",
+        authTitleRegister: "📝 Registracija",
+        authEmail: "Email adresa:",
+        authPassword: "Lozinka:",
+        authDisplayName: "Tvoje ime (muzičar):",
+        authBtnLogin: "Prijavi se",
+        authBtnRegister: "Registruj se",
+        authSwitchToRegister: "Nemate nalog? Registrujte se",
+        authSwitchToLogin: "Imate nalog? Prijavite se",
+        authLogout: "Odjavi se",
+        authWelcome: "Muzičar: {name}",
+        authSuccessLogin: "Uspešna prijava!",
+        authSuccessRegister: "Uspešna registracija! Sada se možete prijaviti.",
+        authError: "Greška: {msg}",
+        
+        roleAdmin: "ŠEF / ADMIN",
+        roleUser: "KORISNIK",
+        
+        joinCodeLabel: "Kod za učlanjenje u bend:",
+        joinCodeBtn: "Priključi se pomoću koda",
+        joinCodeSuccess: "Uspešno ste se priključili bendu!",
+        joinCodePlaceholder: "Npr. FANK99",
+        
+        inviteEmailLabel: "Pozovi člana preko Email-a:",
+        inviteEmailBtn: "Pošalji pozivnicu",
+        inviteEmailSuccess: "Pozivnica uspešno poslata!",
+        
+        bandOwnerLabel: "Vlasnik / Osnivač",
+        bandMembersTitle: "👥 Članovi benda:",
+        bandCodeTitle: "🔑 Pristupni kod benda:",
+        
+        createFirstBandMsg: "Još uvek niste član nijednog benda. Kreirajte svoj prvi bend ili se priključite postojećem preko pristupnog koda koji vam je poslao šef benda!",
+        onlyAdminEditMsg: "Samo Šef / Admin benda može menjati drajv link ili brisati bend.",
+        
+        duplicateNameError: "Bend sa tim nazivom već postoji u bazi!",
+        duplicateUrlError: "Ovaj Google Drive folder je već unet!",
+        emptyNameError: "Naziv ne može biti prazan!"
     },
     en: {
-        subtitle: "v1.3.7 • Repertoire, Drag & Drop Mixer and Management",
-        playBtn: "Play tracks",
-        pauseBtn: "Pause",
+        subtitle: "v1.4.0 • Cloud Sync & Membership",
         stopBtn: "Stop",
+        playBtn: "Play Stems",
+        pauseBtn: "Pause",
         masterMuteBtn: "MUTE ALL",
         masterVolLabel: "MASTER:",
-        activeBandLabel: "Band:",
+        activeBandLabel: "Active Band:",
         addBandBtn: "Manage",
-        bandNameLabel: "New band name:",
+        bandNameLabel: "New Band Name:",
         bandUrlLabel: "Google Drive Folder Link:",
-        connectBtn: "Add new band",
-        deleteBandBtnText: "❌ Delete band: {name}",
-        deleteBandConfirm: "Are you sure you want to delete this band and all its data?",
+        connectBtn: "Add New Band",
         searchPlaceholder: "🔍 Search song...",
         songsTitle: "📋 Song List",
-        selectBandPlaceholder: "-- No Band --",
+        
+        // Band Management
         editSectionTitle: "✏️ Edit Active Band",
         addSectionTitle: "➕ Add New Band",
         deleteSectionTitle: "🗑️ Delete Active Band",
-        deleteSectionText: "Are you sure you want to delete band {name}? All songs and saved mix levels will be deleted.",
-        renameBandLabel: "Current band name:",
-        renameBandUrlLabel: "Drive folder link:",
-        renameBtn: "Save changes",
-        noBands: "No saved bands. Add a new one in the 'Manage' panel.",
+        renameBandLabel: "Current Band Name:",
+        renameBandUrlLabel: "Drive Folder Link:",
+        renameBtn: "Save Changes",
+        deleteBandConfirm: "Are you sure you want to delete this band? All songs and saved mixes will be permanently deleted from the cloud database!",
+        deleteBandBtnText: "❌ Delete band: {name}",
+        deleteSectionText: "Warning! Deleting band '{name}' will also delete all its members and saved song mixes.",
+        selectBandPlaceholder: "-- No Band --",
+        noBands: "No saved bands found. Create your first band on the left!",
         noSongs: "No songs found in this folder.",
-        statusInit: "Select a song from the left side to start...",
+        
+        // Audio Statuses
+        statusInit: "Log in and select a song to begin...",
         statusConnecting: "Connecting to Google Drive...",
-        statusConnError: "Error connecting to Google Drive API. Check your key or internet connection.",
-        statusLoading: "Loading audio files into memory...",
-        statusDecoding: "Decoding audio",
-        statusReady: "Ready! Loaded {count} tracks.",
-        statusNoFiles: "No audio files in the selected song folder!",
-        statusError: "Error during song loading.",
-        duplicateNameError: "A band with this name already exists!",
-        duplicateUrlError: "This Google Drive link is already used by another band!",
-        emptyNameError: "Band name cannot be empty!",
-        apiKeyWarning: "Insert your Google API Key into the code (line ~143 in index.html) to load songs from Drive!"
+        statusConnError: "Error loading songs from Drive. Check link or API key.",
+        statusLoading: "Loading audio stems into RAM...",
+        statusDecoding: "Decoding track",
+        statusReady: "Stems loaded: {count}. Ready for the gig!",
+        statusError: "Audio Engine error during streaming.",
+        statusNoFiles: "No supported audio files (.mp3, .wav, .m4a) in this folder!",
+        apiKeyWarning: "Enter your Google API Key in the code (line ~143 of index.html) to load songs!",
+
+        // #NOVO v1.4.0 - Authentication, Membership and SPA Menu
+        navBands: "🎸 My Bands",
+        navRepertoire: "🎵 Repertoire",
+        navCalendar: "📅 Calendar",
+        
+        authTitleLogin: "🔑 Login",
+        authTitleRegister: "📝 Register",
+        authEmail: "Email Address:",
+        authPassword: "Password:",
+        authDisplayName: "Your Name (Musician):",
+        authBtnLogin: "Log In",
+        authBtnRegister: "Register",
+        authSwitchToRegister: "Don't have an account? Register",
+        authSwitchToLogin: "Already have an account? Log In",
+        authLogout: "Log Out",
+        authWelcome: "Musician: {name}",
+        authSuccessLogin: "Successfully logged in!",
+        authSuccessRegister: "Registration successful! You can now log in.",
+        authError: "Error: {msg}",
+        
+        roleAdmin: "BAND LEADER / ADMIN",
+        roleUser: "MEMBER / USER",
+        
+        joinCodeLabel: "Join band with access code:",
+        joinCodeBtn: "Join Band",
+        joinCodeSuccess: "Successfully joined the band!",
+        joinCodePlaceholder: "E.g. FANK99",
+        
+        inviteEmailLabel: "Invite member by Email:",
+        inviteEmailBtn: "Send Invite",
+        inviteEmailSuccess: "Invitation sent successfully!",
+        
+        bandOwnerLabel: "Founder / Owner",
+        bandMembersTitle: "👥 Band Members:",
+        bandCodeTitle: "🔑 Band Access Code:",
+        
+        createFirstBandMsg: "You are not a member of any band yet. Create your first band or join an existing one using the access code sent by your band leader!",
+        onlyAdminEditMsg: "Only the Band Leader / Admin can change the Drive link or delete the band.",
+        
+        duplicateNameError: "A band with this name already exists in the database!",
+        duplicateUrlError: "This Google Drive folder is already imported!",
+        emptyNameError: "Name cannot be empty!"
     }
 };
-
