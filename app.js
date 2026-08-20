@@ -1,5 +1,5 @@
 // ==========================================================================
-// GIGSTEMS WEB APP - CORE JAVASCRIPT LOGIC (VERZIJA 1.4.07)
+// GIGLAB WEB APP - CORE JAVASCRIPT LOGIC (VERZIJA 1.4.07)
 // ==========================================================================
 
 // Supabase konfiguracija baze podataka
@@ -21,20 +21,29 @@ let isPlaying = false;
 let startTime = 0;
 let pauseOffset = 0;
 let timerInterval = null;
-let isMasterMuted = false;
 
 // Držanje stanja uloga i bendova
 let bands = [];
 let activeBandId = "";
-let expandedBandId = ""; // Prati koji je bend trenutno otvoren u sidebar stablu
+let expandedBandId = ""; // Prati koji je bend trenutno otvoren u meniju
 let currentSongName = "";
 let allSongs = [];
 let currentUserProfile = null;
-let currentTab = "bands"; // bands, stems, members, settings, newband, joinband
+let currentTab = "dashboard";
 
-// Jezik
+// Pamćenje i učitavanje izabranog jezika iz Local Storage-a
 let currentLang = localStorage.getItem('gigstems_lang') || 'sr';
 let isRegisterMode = false;
+
+// Predefinisani spisak država i njihovih gradova za standardizaciju
+const countryRegistry = {
+    "Srbija": ["Beograd", "Novi Sad", "Niš", "Kragujevac", "Subotica", "Leskovac", "Kruševac", "Kraljevo", "Pančevo", "Čačak", "Šabac", "Novi Pazar", "Zrenjanin", "Smederevo", "Vranje", "Užice", "Valjevo"],
+    "Hrvatska": ["Zagreb", "Split", "Rijeka", "Osijek", "Zadar", "Pula", "Slavonski Brod", "Karlovac", "Varaždin", "Šibenik", "Sisak", "Dubrovnik"],
+    "Bosna i Hercegovina": ["Sarajevo", "Banja Luka", "Tuzla", "Zenica", "Mostar", "Bijeljina", "Brčko", "Bihać", "Doboj", "Prijedor", "Trebinje"],
+    "Crna Gora": ["Podgorica", "Nikšić", "Herceg Novi", "Pljevlja", "Bar", "Budva", "Cetinje", "Kotor", "Tivat"],
+    "Slovenija": ["Ljubljana", "Maribor", "Celje", "Kranj", "Koper", "Velenje", "Novo Mesto"],
+    "Makedonija": ["Skoplje", "Bitolj", "Kumanovo", "Prilep", "Tetovo", "Ohrid", "Veles"]
+};
 
 // DOM elementi
 const playBtn = document.getElementById('playBtn');
@@ -44,9 +53,7 @@ const songsList = document.getElementById('songsList');
 const authContainer = document.getElementById('authContainer');
 const appContainer = document.getElementById('appContainer');
 
-// ==========================================================================
-// 0. POKRETANJE & INSTANT URL ČIŠĆENJE
-// ==========================================================================
+// URL Čišćenje tokena u realnom vremenu
 if (window.location.hash && window.location.hash.includes('access_token')) {
     setTimeout(() => {
         window.history.replaceState(null, null, window.location.pathname + window.location.search);
@@ -54,46 +61,9 @@ if (window.location.hash && window.location.hash.includes('access_token')) {
 }
 
 // ==========================================================================
-// 1. AUDIO ENGINE (Web Audio API & Memory Cleaner)
+// 1. AUTENTIFIKACIJA (Supabase Auth & Profiles)
 // ==========================================================================
-function initAudioContext() {
-    if (!audioCtx) {
-        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    }
-    if (!masterGainNode || masterGainNode.context !== audioCtx) {
-        masterGainNode = audioCtx.createGain();
-        const masterVolInput = document.getElementById('masterVolumeRange');
-        masterGainNode.gain.value = isMasterMuted ? 0 : (masterVolInput ? parseFloat(masterVolInput.value) : 1.0);
-        masterGainNode.connect(audioCtx.destination);
-    }
-}
 
-// Gvozdeno čišćenje RAM-a i audio resursa
-function cleanAudioEngine() {
-    stopAudio();
-    if (audioCtx) {
-        try {
-            audioCtx.close();
-        } catch(e) {}
-        audioCtx = null;
-    }
-    masterGainNode = null;
-    audioBuffers = [];
-    sourceNodes = [];
-    gainNodes = [];
-    trackNames = [];
-    currentSongName = "";
-    if (document.getElementById('tracksContainer')) {
-        document.getElementById('tracksContainer').innerHTML = "";
-    }
-    if (statusLabel) {
-        updateStatusText('statusInit');
-    }
-}
-
-// ==========================================================================
-// 2. AUTENTIFIKACIJA, OTP VERIFIKACIJA I PROFILI
-// ==========================================================================
 supabaseClient.auth.onAuthStateChange((event, session) => {
     if (session) {
         authContainer.style.display = "none";
@@ -102,7 +72,7 @@ supabaseClient.auth.onAuthStateChange((event, session) => {
     } else {
         appContainer.style.display = "none";
         authContainer.style.display = "block";
-        cleanAudioEngine();
+        resetAudioState();
     }
 });
 
@@ -118,33 +88,35 @@ async function loadUserProfile(user) {
         document.getElementById('currentUserName').innerText = data.display_name || user.email;
         document.getElementById('currentUserName').title = user.email;
         
-        // Postavi avatar sliku ili početno slovo
+        // Avatar krug
         const avatarCircle = document.getElementById('userAvatarCircle');
         if (data.avatar_url) {
-            avatarCircle.innerHTML = `<img src="${data.avatar_url}" />`;
+            avatarCircle.innerHTML = `<img src="${data.avatar_url}" alt="avatar">`;
         } else {
             const firstLetter = (data.display_name || user.email).charAt(0).toUpperCase();
-            avatarCircle.innerHTML = firstLetter;
+            avatarCircle.innerText = firstLetter;
         }
 
-        // Popuni modal podešavanja
+        // Popunjavanje polja u modal podešavanjima
         document.getElementById('settingDisplayName').value = data.display_name || "";
-        document.getElementById('settingEmail').value = user.email;
+        document.getElementById('settingEmail').value = data.email || user.email;
 
+        // Učitavamo bendove za ulogovanog korisnika
         loadUserBands();
     }
 }
 
 function toggleAuthMode() {
     isRegisterMode = !isRegisterMode;
-    updateAuthUILang();
-}
-
-function updateAuthUILang() {
     const title = document.getElementById('authTitle');
     const submitBtn = document.getElementById('authSubmitBtn');
     const switchLink = document.getElementById('authSwitchLink');
     const displayNameGroup = document.getElementById('authDisplayNameGroup');
+    const otpGroup = document.getElementById('authOtpGroup');
+    
+    otpGroup.style.display = "none";
+    document.getElementById('authFieldsGroup').style.display = "block";
+    submitBtn.style.display = "block";
 
     if (isRegisterMode) {
         title.innerText = i18n[currentLang].authTitleRegister;
@@ -170,7 +142,6 @@ async function handleAuthSubmit() {
     }
 
     if (isRegisterMode) {
-        // Registracija
         const { data, error } = await supabaseClient.auth.signUp({
             email,
             password,
@@ -184,20 +155,17 @@ async function handleAuthSubmit() {
         if (error) {
             alert(i18n[currentLang].authError.replace("{msg}", error.message));
         } else {
-            // Otvori ekran za unos OTP verifikacionog koda
-            showOTPEkran(email);
+            showOtpScreen(email);
         }
     } else {
-        // Prijava
         const { data, error } = await supabaseClient.auth.signInWithPassword({
             email,
             password
         });
 
         if (error) {
-            if (error.message.includes('Email not confirmed')) {
-                // Ako e-mail nije potvrđen, automatski ga šaljemo na OTP unos
-                showOTPEkran(email);
+            if (error.message.includes("Email not confirmed") || error.message.includes("confirm")) {
+                showOtpScreen(email);
             } else {
                 alert(i18n[currentLang].authError.replace("{msg}", error.message));
             }
@@ -205,150 +173,157 @@ async function handleAuthSubmit() {
     }
 }
 
-// Prikaz OTP prozora za unos koda unutar istog rama
-function showOTPEkran(email) {
-    const authWrapper = document.getElementById('authContainer');
-    authWrapper.innerHTML = `
-        <div class="auth-header-langs">
-            <button class="lang-pill ${currentLang === 'sr' ? 'active' : ''}" onclick="setLanguage('sr')">SR</button>
-            <button class="lang-pill ${currentLang === 'en' ? 'active' : ''}" onclick="setLanguage('en')">EN</button>
-        </div>
-        <h2 class="auth-title">${i18n[currentLang].otpTitle}</h2>
-        <p style="font-size: 0.95em; color: var(--color-text-muted); text-align: center; margin-bottom: 20px;">
-            ${i18n[currentLang].otpSentText} <br><strong>${email}</strong>
-        </p>
-        <div class="input-group" style="margin-bottom: 15px;">
-            <label class="input-label">${i18n[currentLang].otpTitle}:</label>
-            <input type="text" id="otpCodeInput" class="settings-input" placeholder="${i18n[currentLang].otpPlaceholder}" style="text-align: center; font-size: 1.3em; letter-spacing: 4px;">
-        </div>
-        <button class="btn-connect" style="width: 100%; margin-bottom: 15px;" onclick="handleOTPVerify('${email}')">${i18n[currentLang].otpBtnConfirm}</button>
-        <div class="auth-switch-link" onclick="restoreAuthMainScreen()">${i18n[currentLang].otpBackToRegister}</div>
-    `;
+function showOtpScreen(email) {
+    document.getElementById('authFieldsGroup').style.display = "none";
+    document.getElementById('authSubmitBtn').style.display = "none";
+    const otpGroup = document.getElementById('authOtpGroup');
+    otpGroup.style.display = "block";
+    
+    document.getElementById('authTitle').innerText = i18n[currentLang].otpTitle;
+    document.getElementById('otpText').innerText = i18n[currentLang].otpText;
+    document.getElementById('otpEmailInput').value = email;
 }
 
-function restoreAuthMainScreen() {
-    window.location.reload(); // Najbezbedniji način za resetovanje Auth stanja
+function backToRegister() {
+    isRegisterMode = false;
+    toggleAuthMode();
 }
 
-async function handleOTPVerify(email) {
-    const code = document.getElementById('otpCodeInput').value.trim();
-    if (!code) {
-        alert(currentLang === 'sr' ? "Unesite kod!" : "Please enter the code!");
+async function handleOtpSubmit() {
+    const email = document.getElementById('otpEmailInput').value;
+    const token = document.getElementById('otpTokenInput').value.trim();
+
+    if (!token) {
+        alert(currentLang === 'sr' ? "Unesite verifikacioni kod!" : "Please enter confirmation token!");
         return;
     }
 
     const { data, error } = await supabaseClient.auth.verifyOtp({
         email,
-        token: code,
+        token,
         type: 'signup'
     });
 
     if (error) {
         alert(i18n[currentLang].authError.replace("{msg}", error.message));
     } else {
-        window.location.reload();
+        alert(currentLang === 'sr' ? "Uspešna verifikacija i prijava!" : "Email successfully verified!");
+        location.reload();
     }
 }
 
 async function handleLogout() {
-    cleanAudioEngine();
+    stopAudio();
     closeProfileMenu();
     const { error } = await supabaseClient.auth.signOut();
 }
 
 // ==========================================================================
-// 3. SPA NAVIGACIJA & SIDEBAR TREE MENU
+// 2. NAVIGACIJA & STRUKTURA BENDOVA (Accordian sidebar)
 // ==========================================================================
-function switchTab(tabId, bandId = "") {
+
+function switchTab(tabId) {
     currentTab = tabId;
-    if (bandId) activeBandId = bandId;
     
-    // Zatvori mobilni sidebar
-    closeAllMobilePanels();
+    // Čišćenje audio resursa ako odlazimo sa plejera
+    if (tabId !== 'songs') {
+        cleanAudioEngine();
+    }
 
     const repCol = document.getElementById('repertoireColumn');
-    const mainView = document.getElementById('mainContentView');
+    if (tabId === 'songs' && activeBandId) {
+        repCol.style.display = "flex";
+    } else {
+        repCol.style.display = "none";
+    }
 
-    // Podrazumevano sakrij sve poglede i resurse
-    repCol.style.display = "none";
-    mainView.innerHTML = "";
-
-    // Obeleži aktivne stavke u sidebar-u
-    document.querySelectorAll('.submenu-item').forEach(el => el.classList.remove('active'));
-    document.querySelectorAll('.band-tree-header').forEach(el => el.classList.remove('active'));
-
-    if (tabId === 'dashboard') {
-        const band = bands.find(b => b.id === bandId);
-        if (band) {
-            expandedBandId = bandId;
-            renderSidebarBands();
-            document.getElementById(`bandHeader-${bandId}`).classList.add('active');
-            renderDashboardUI(band);
-        }
-    } else if (tabId === 'stems') {
-        const band = bands.find(b => b.id === bandId);
-        if (band) {
-            expandedBandId = bandId;
-            renderSidebarBands();
-            document.getElementById(`submenu-stems-${bandId}`).classList.add('active');
-            repCol.style.display = "flex";
-            renderMixerConsoleUI(band);
-            loadSongsFromActiveBand();
-        }
-    } else if (tabId === 'members') {
-        const band = bands.find(b => b.id === bandId);
-        if (band) {
-            expandedBandId = bandId;
-            renderSidebarBands();
-            document.getElementById(`submenu-members-${bandId}`).classList.add('active');
-            renderMembersUI(band);
-        }
-    } else if (tabId === 'settings') {
-        const band = bands.find(b => b.id === bandId);
-        if (band) {
-            expandedBandId = bandId;
-            renderSidebarBands();
-            document.getElementById(`submenu-settings-${bandId}`).classList.add('active');
-            renderBandSettingsUI(band);
-        }
-    } else if (tabId === 'newband') {
-        renderNewBandUI();
-    } else if (tabId === 'joinband') {
-        renderJoinBandUI();
+    document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
+    
+    const targetElement = document.getElementById(`tab${tabId.charAt(0).toUpperCase() + tabId.slice(1)}`);
+    if (targetElement) {
+        targetElement.style.display = 'block';
     }
 }
 
-// ==========================================================================
-// 4. KORISNIČKI PODACI & BEND INTEGRACIJA
-// ==========================================================================
 async function loadUserBands() {
     if (!currentUserProfile) return;
 
-    const { data, error } = await supabaseClient
+    // Prvo čitamo sva članstva
+    const { data: membershipData, error: memError } = await supabaseClient
         .from('band_members')
-        .select(`
-            band_id,
-            role,
-            bands (
-                id,
-                name,
-                folder_id,
-                raw_url,
-                join_code,
-                logo_url,
-                web_url,
-                instagram_url,
-                contact_info
-            )
-        `)
+        .select('band_id, role')
         .eq('user_id', currentUserProfile.id);
 
-    if (data) {
-        bands = data.map(item => ({
-            ...item.bands,
-            user_role: item.role
-        }));
-        renderSidebarBands();
+    if (membershipData && membershipData.length > 0) {
+        const bandIds = membershipData.map(m => m.band_id);
+        
+        // Zatim čitamo podatke o bendovima
+        const { data: bandData, error: bandError } = await supabaseClient
+            .from('bands')
+            .select('*')
+            .in('id', bandIds);
+
+        if (bandData) {
+            bands = bandData.map(b => {
+                const relation = membershipData.find(m => m.band_id === b.id);
+                return {
+                    ...b,
+                    userRole: relation ? relation.role : 'member'
+                };
+            });
+        }
+    } else {
+        bands = [];
+    }
+
+    renderSidebarBands();
+    renderBandsUI();
+}
+
+function toggleBandExpand(bandId, event) {
+    event.stopPropagation();
+    if (expandedBandId === bandId) {
+        expandedBandId = "";
+    } else {
+        expandedBandId = bandId;
+        setActiveBand(bandId);
+    }
+    renderSidebarBands();
+}
+
+function setActiveBand(bandId) {
+    activeBandId = bandId;
+    const band = bands.find(b => b.id === bandId);
+    if (band) {
+        document.getElementById('dashboardBandName').innerText = band.name;
+        document.getElementById('dashboardBandRole').innerText = band.userRole === 'admin' ? i18n[currentLang].roleAdmin : i18n[currentLang].roleUser;
+        
+        // Prikaz logotipa
+        const logoImg = document.getElementById('dashboardLogoImg');
+        if (band.logo_url) {
+            logoImg.innerHTML = `<img src="${band.logo_url}" alt="band logo">`;
+        } else {
+            logoImg.innerHTML = `<span style="font-size: 2.5em;">🎸</span><br>Upload Logo`;
+        }
+
+        // Popunjavamo polja u postavkama benda
+        document.getElementById('editBandName').value = band.name || "";
+        document.getElementById('editBandUrl').value = band.raw_url || "";
+        document.getElementById('editBandContactName').value = band.contact_name || "";
+        document.getElementById('editBandContactPhone').value = band.contact_phone || "";
+        document.getElementById('editBandWebsite').value = band.website || "";
+        document.getElementById('editBandInstagram').value = band.instagram || "";
+        
+        // Država i grad u postavkama
+        document.getElementById('editBandCountry').value = band.country || "";
+        document.getElementById('editBandCity').value = band.city || "";
+
+        // Pristupni kodovi
+        document.getElementById('dashboardBandCode').innerText = band.join_code || "N/A";
+        
+        loadSongsFromActiveBand();
+        loadBandMembersUI();
+        switchTab('dashboard');
     }
 }
 
@@ -357,440 +332,151 @@ function renderSidebarBands() {
     listContainer.innerHTML = "";
 
     if (bands.length === 0) {
-        listContainer.innerHTML = `<div style="padding: 10px; font-size: 0.9em; color: var(--color-text-muted); text-align: center;">${i18n[currentLang].noBands}</div>`;
+        listContainer.innerHTML = `<div style="padding: 10px; font-size: 0.85em; color: var(--text-muted);">${i18n[currentLang].noBands}</div>`;
         return;
     }
 
-    bands.forEach(band => {
-        const isExpanded = expandedBandId === band.id;
-        const logoSrc = band.logo_url || "https://images.unsplash.com/photo-1511192336575-5a79af67a629?w=100&auto=format&fit=crop&q=60";
-
-        const itemDiv = document.createElement('div');
-        itemDiv.className = `band-tree-item ${isExpanded ? 'expanded' : ''}`;
-
-        itemDiv.innerHTML = `
-            <div class="band-tree-header" id="bandHeader-${band.id}" onclick="toggleBandTree('${band.id}')">
-                <img class="band-tree-logo" src="${logoSrc}" alt="Logo">
-                <span>${band.name}</span>
-                <span class="band-tree-arrow">▲</span>
+    bands.forEach(b => {
+        const item = document.createElement('div');
+        item.className = `sidebar-band-item ${expandedBandId === b.id ? 'expanded' : ''}`;
+        
+        const isActive = activeBandId === b.id;
+        
+        item.innerHTML = `
+            <div class="sidebar-band-header ${isActive ? 'active' : ''}" onclick="setActiveBand('${b.id}')">
+                <span class="sidebar-band-name">
+                    ${b.logo_url ? `<img src="${b.logo_url}" style="width: 20px; height: 20px; border-radius: 4px; object-fit: cover;">` : '🎸'} 
+                    ${b.name}
+                </span>
+                <span class="band-arrow" onclick="toggleBandExpand('${b.id}', event)">▲</span>
             </div>
-            <div class="band-tree-submenu" id="bandSubmenu-${band.id}">
-                <div class="submenu-item" id="submenu-stems-${band.id}" onclick="switchTab('stems', '${band.id}')">🎵 ${i18n[currentLang].bandOptionStems}</div>
-                <div class="submenu-item" id="submenu-members-${band.id}" onclick="switchTab('members', '${band.id}')">👥 ${i18n[currentLang].bandOptionMembers}</div>
-                <div class="submenu-item" id="submenu-settings-${band.id}" onclick="switchTab('settings', '${band.id}')">⚙️ ${i18n[currentLang].bandOptionSettings}</div>
-            </div>
-        `;
-        listContainer.appendChild(itemDiv);
-    });
-}
-
-function toggleBandTree(bandId) {
-    if (expandedBandId === bandId) {
-        expandedBandId = ""; // zatvori
-    } else {
-        expandedBandId = bandId;
-    }
-    renderSidebarBands();
-    if (expandedBandId) {
-        switchTab('dashboard', bandId);
-    }
-}
-
-// Dugme "+" za suptilne opcije dodavanja
-function toggleAddBandMenu() {
-    const subContainer = document.getElementById('plusAddSubmenu');
-    if (subContainer.style.display === 'flex') {
-        subContainer.style.display = 'none';
-    } else {
-        subContainer.style.display = 'flex';
-    }
-}
-
-// ==========================================================================
-// 5. POGLEDI DESNOG PROZORA (DASHBOARD, MEMBERS, SETTINGS, NEW BAND, JOIN)
-// ==========================================================================
-
-// Dashboard tab
-function renderDashboardUI(band) {
-    const view = document.getElementById('mainContentView');
-    const logoSrc = band.logo_url || "https://images.unsplash.com/photo-1511192336575-5a79af67a629?w=400&auto=format&fit=crop&q=60";
-    
-    view.innerHTML = `
-        <div class="dashboard-wrapper">
-            <div class="dashboard-card">
-                <div class="dashboard-logo-section">
-                    <img class="band-dashboard-logo" src="${logoSrc}">
-                    <p style="font-size: 0.8em; color: var(--color-text-muted); text-align: center;">${band.name}</p>
-                </div>
-                <div class="dashboard-info-section">
-                    <div>
-                        <h2 class="dashboard-band-name">${band.name}</h2>
-                        <span class="dashboard-role-badge">${band.user_role === 'admin' ? i18n[currentLang].roleAdmin : i18n[currentLang].roleUser}</span>
-                        
-                        <!-- Band Web / Social Info -->
-                        <div style="margin-top: 10px; font-size: 0.95em; color: var(--color-text-muted); display: flex; flex-direction: column; gap: 6px;">
-                            ${band.web_url ? `<span>🌐 Web: <a href="${band.web_url}" target="_blank" style="color: var(--color-primary-hover);">${band.web_url}</a></span>` : ''}
-                            ${band.instagram_url ? `<span>📸 Instagram: <a href="${band.instagram_url}" target="_blank" style="color: var(--color-primary-hover);">${band.instagram_url}</a></span>` : ''}
-                            ${band.contact_info ? `<span>📞 Kontakt: ${band.contact_info}</span>` : ''}
-                        </div>
-                    </div>
-                    <div class="dashboard-actions-grid" style="margin-top: 25px;">
-                        <button class="btn-dashboard-action" onclick="switchTab('stems', '${band.id}')">🎵 ${i18n[currentLang].bandOptionStems}</button>
-                        <button class="btn-dashboard-action" onclick="switchTab('members', '${band.id}')">👥 ${i18n[currentLang].bandOptionMembers}</button>
-                        <button class="btn-dashboard-action" onclick="switchTab('settings', '${band.id}')">⚙️ ${i18n[currentLang].bandOptionSettings}</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    `;
-}
-
-// Members tab
-async function renderMembersUI(band) {
-    const view = document.getElementById('mainContentView');
-    view.innerHTML = `<div class="right-panel-wrapper"><p>${i18n[currentLang].statusLoading}</p></div>`;
-
-    const { data: members, error } = await supabaseClient
-        .from('band_members')
-        .select(`
-            id,
-            role,
-            user_id,
-            profiles (
-                display_name,
-                email,
-                avatar_url
-            )
-        `)
-        .eq('band_id', band.id);
-
-    if (error) {
-        view.innerHTML = `<div class="right-panel-wrapper"><p>Error: ${error.message}</p></div>`;
-        return;
-    }
-
-    let tableRows = "";
-    members.forEach(m => {
-        const mProfile = m.profiles || {};
-        const isSelf = m.user_id === currentUserProfile.id;
-        const mAvatar = mProfile.avatar_url || "";
-        const avatarHTML = mAvatar ? `<img src="${mAvatar}" style="width:30px; height:30px; border-radius:50%; object-fit:cover; vertical-align:middle; margin-right:8px;" />` : `<span style="display:inline-block; width:30px; height:30px; border-radius:50%; background:#8b5cf6; color:white; text-align:center; line-height:30px; font-size:12px; margin-right:8px;">${(mProfile.display_name || "M").charAt(0).toUpperCase()}</span>`;
-
-        let actionButton = "";
-        if (band.user_role === 'admin' && !isSelf) {
-            actionButton = `<button class="btn-danger-small" onclick="kickBandMember('${band.id}', '${m.user_id}', '${mProfile.display_name || mProfile.email}')">${i18n[currentLang].memberActionKick}</button>`;
-        } else if (isSelf) {
-            actionButton = `<span style="font-style:italic; color: var(--color-text-muted);">Vi</span>`;
-        }
-
-        tableRows += `
-            <tr>
-                <td>${avatarHTML} ${mProfile.display_name || 'Muzičar'}</td>
-                <td>${mProfile.email || '-'}</td>
-                <td><span class="dashboard-role-badge" style="margin-bottom:0;">${m.role === 'admin' ? i18n[currentLang].roleAdmin : i18n[currentLang].roleUser}</span></td>
-                <td>${actionButton}</td>
-            </tr>
-        `;
-    });
-
-    view.innerHTML = `
-        <div class="right-panel-wrapper">
-            <h2 class="right-panel-title">👥 ${i18n[currentLang].bandMembersTitle}</h2>
-            <table class="member-list-table">
-                <thead>
-                    <tr>
-                        <th>Ime</th>
-                        <th>Email</th>
-                        <th>Uloga</th>
-                        <th>Akcija</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${tableRows}
-                </tbody>
-            </table>
-            
-            <div style="margin-top: 30px; display: flex; justify-content: flex-end;">
-                <button class="btn-control" style="background-color: var(--color-danger); color: white;" onclick="leaveBand('${band.id}')">${i18n[currentLang].memberActionLeave}</button>
-            </div>
-        </div>
-    `;
-}
-
-// Kickout
-async function kickBandMember(bandId, userId, displayName) {
-    if (!confirm(i18n[currentLang].memberActionKickConfirm.replace('{name}', displayName))) return;
-
-    const { error } = await supabaseClient
-        .from('band_members')
-        .delete()
-        .eq('band_id', bandId)
-        .eq('user_id', userId);
-
-    if (error) {
-        alert(error.message);
-    } else {
-        const band = bands.find(b => b.id === bandId);
-        renderMembersUI(band);
-    }
-}
-
-// Napuštanje benda
-async function leaveBand(bandId) {
-    const band = bands.find(b => b.id === bandId);
-    if (!band) return;
-
-    // Proveri da li je jedini preostali admin
-    const { data: admins } = await supabaseClient
-        .from('band_members')
-        .select('user_id')
-        .eq('band_id', bandId)
-        .eq('role', 'admin');
-
-    if (admins && admins.length === 1 && admins[0].user_id === currentUserProfile.id) {
-        alert(i18n[currentLang].memberLastAdminAlert);
-        return;
-    }
-
-    if (!confirm(i18n[currentLang].memberActionLeaveConfirm)) return;
-
-    const { error } = await supabaseClient
-        .from('band_members')
-        .delete()
-        .eq('band_id', bandId)
-        .eq('user_id', currentUserProfile.id);
-
-    if (error) {
-        alert(error.message);
-    } else {
-        // Osveži listu i vrati se na početnu
-        await loadUserBands();
-        expandedBandId = "";
-        renderSidebarBands();
-        const mainView = document.getElementById('mainContentView');
-        mainView.innerHTML = `<div class="right-panel-wrapper"><p>${i18n[currentLang].noActiveBand}</p></div>`;
-    }
-}
-
-// Band Settings tab
-function renderBandSettingsUI(band) {
-    const view = document.getElementById('mainContentView');
-    const isAdmin = band.user_role === 'admin';
-    const logoSrc = band.logo_url || "";
-
-    view.innerHTML = `
-        <div class="right-panel-wrapper">
-            <h2 class="right-panel-title">⚙️ ${band.name} - ${i18n[currentLang].bandOptionSettings}</h2>
-            
-            <div class="input-group">
-                <label class="input-label">${i18n[currentLang].bandNameLabel}</label>
-                <input type="text" id="editBandName" class="settings-input" value="${band.name}" ${!isAdmin ? 'disabled' : ''}>
-            </div>
-
-            <div class="input-group" style="margin-top: 15px;">
-                <label class="input-label">${i18n[currentLang].bandUrlLabel}</label>
-                <input type="text" id="editBandUrl" class="settings-input" value="${band.raw_url || ''}" ${!isAdmin ? 'disabled' : ''}>
-            </div>
-
-            <div class="input-group" style="margin-top: 15px;">
-                <label class="input-label">${i18n[currentLang].bandWebLabel}</label>
-                <input type="text" id="editBandWebUrl" class="settings-input" placeholder="https://tvojbend.com" value="${band.web_url || ''}" ${!isAdmin ? 'disabled' : ''}>
-            </div>
-
-            <div class="input-group" style="margin-top: 15px;">
-                <label class="input-label">${i18n[currentLang].bandInstagramLabel}</label>
-                <input type="text" id="editBandInstagram" class="settings-input" placeholder="https://instagram.com/tvojbend" value="${band.instagram_url || ''}" ${!isAdmin ? 'disabled' : ''}>
-            </div>
-
-            <div class="input-group" style="margin-top: 15px;">
-                <label class="input-label">${i18n[currentLang].bandContactLabel}</label>
-                <input type="text" id="editBandContact" class="settings-input" placeholder="Telefon ili email menadžera" value="${band.contact_info || ''}" ${!isAdmin ? 'disabled' : ''}>
-            </div>
-
-            <div class="input-group" style="margin-top: 15px;">
-                <label class="input-label">${i18n[currentLang].bandLogoLabel}</label>
-                <div style="display:flex; align-items:center; gap: 20px;">
-                    <img id="bandSettingsLogoPreview" src="${logoSrc || 'https://images.unsplash.com/photo-1511192336575-5a79af67a629?w=100&auto=format&fit=crop&q=60'}" style="width: 80px; height: 80px; border-radius: 8px; object-fit: cover;">
-                    ${isAdmin ? `
-                        <input type="file" id="bandLogoFileInput" style="display:none;" onchange="uploadBandLogo(event, '${band.id}')">
-                        <button class="btn-control" onclick="document.getElementById('bandLogoFileInput').click()">Izaberi sliku</button>
-                    ` : ''}
-                </div>
-            </div>
-
-            <div class="input-group" style="margin-top: 25px; border-top: 1px solid var(--border-color); padding-top: 20px;">
-                <label class="input-label">${i18n[currentLang].bandCodeTitle}</label>
-                <div style="display:flex; align-items:center; gap:15px;">
-                    <span style="font-size:1.4em; font-family:monospace; color:var(--color-primary-hover); letter-spacing:2px;">${band.join_code}</span>
-                    ${isAdmin ? `<button class="btn-control" onclick="regenerateBandJoinCode('${band.id}')">${i18n[currentLang].bandRegenCodeBtn}</button>` : ''}
-                </div>
-            </div>
-
-            ${isAdmin ? `
-                <div style="margin-top: 30px; display:flex; justify-content: space-between; gap: 15px;">
-                    <button class="btn-control" style="background-color: var(--color-danger); color: white;" onclick="deleteBand('${band.id}', '${band.name}')">${i18n[currentLang].deleteBandBtnText.replace('{name}', band.name)}</button>
-                    <button class="btn-connect" onclick="saveBandSettings('${band.id}')">${i18n[currentLang].renameBtn}</button>
+            ${expandedBandId === b.id ? `
+                <div class="sidebar-band-sub-menu">
+                    <div class="sub-menu-item ${currentTab === 'songs' ? 'active' : ''}" onclick="event.stopPropagation(); switchTab('songs')">${i18n[currentLang].btnSongs}</div>
+                    <div class="sub-menu-item ${currentTab === 'members' ? 'active' : ''}" onclick="event.stopPropagation(); switchTab('members')">${i18n[currentLang].btnMembers}</div>
+                    <div class="sub-menu-item ${currentTab === 'settings' ? 'active' : ''}" onclick="event.stopPropagation(); switchTab('settings')">${i18n[currentLang].btnSettings}</div>
                 </div>
             ` : ''}
-        </div>
-    `;
+        `;
+        listContainer.appendChild(item);
+    });
 }
 
-// Čuvanje izmena benda
-async function saveBandSettings(bandId) {
-    const name = document.getElementById('editBandName').value.trim();
-    const rawUrl = document.getElementById('editBandUrl').value.trim();
-    const webUrl = document.getElementById('editBandWebUrl').value.trim();
-    const instagramUrl = document.getElementById('editBandInstagram').value.trim();
-    const contactInfo = document.getElementById('editBandContact').value.trim();
-
-    if (!name || !rawUrl) {
-        alert(currentLang === 'sr' ? "Ime i Google Drive link su obavezni!" : "Name and Drive link are required!");
-        return;
-    }
-
-    const folderId = extractFolderId(rawUrl);
-
-    const { error } = await supabaseClient
-        .from('bands')
-        .update({
-            name,
-            raw_url: rawUrl,
-            folder_id: folderId,
-            web_url: webUrl,
-            instagram_url: instagramUrl,
-            contact_info: contactInfo
-        })
-        .eq('id', bandId);
-
-    if (error) {
-        alert(error.message);
-    } else {
-        alert(i18n[currentLang].saveSuccess);
-        await loadUserBands();
-        renderSidebarBands();
-        const band = bands.find(b => b.id === bandId);
-        renderBandSettingsUI(band);
-    }
+function toggleAddOptions() {
+    const el = document.getElementById('addBandOptionsContainer');
+    el.style.display = el.style.display === 'none' ? 'flex' : 'none';
 }
 
-// Upload logotipa benda
-function uploadBandLogo(event, bandId) {
-    const file = event.target.files[0];
-    if (!file) return;
+function triggerAddBand() {
+    document.getElementById('addBandOptionsContainer').style.display = 'none';
+    switchTab('newBand');
+}
 
-    const reader = new FileReader();
-    reader.onload = async function(e) {
-        const base64Data = e.target.result;
+function triggerJoinBand() {
+    document.getElementById('addBandOptionsContainer').style.display = 'none';
+    switchTab('joinBand');
+}
+
+// Standardizacija države i grada
+function setupCountryCitySelectors(prefix) {
+    const countrySel = document.getElementById(`${prefix}BandCountry`);
+    const citySel = document.getElementById(`${prefix}BandCity`);
+    const customCountryGrp = document.getElementById(`${prefix}CustomCountryGroup`);
+    const customCityGrp = document.getElementById(`${prefix}CustomCityGroup`);
+
+    if (!countrySel) return;
+
+    // Prvo punimo selektor država
+    countrySel.innerHTML = '<option value="">-- Izaberi državu --</option>';
+    Object.keys(countryRegistry).forEach(c => {
+        countrySel.innerHTML += `<option value="${c}">${c}</option>`;
+    });
+    countrySel.innerHTML += '<option value="Custom">Custom...</option>';
+
+    countrySel.onchange = () => {
+        const val = countrySel.value;
+        citySel.innerHTML = '<option value="">-- Izaberi grad --</option>';
         
-        const { error } = await supabaseClient
-            .from('bands')
-            .update({ logo_url: base64Data })
-            .eq('id', bandId);
-
-        if (error) {
-            alert(error.message);
+        if (val === "Custom") {
+            customCountryGrp.style.display = "flex";
+            customCityGrp.style.display = "flex";
         } else {
-            document.getElementById('bandSettingsLogoPreview').src = base64Data;
-            await loadUserBands();
-            renderSidebarBands();
+            customCountryGrp.style.display = "none";
+            customCityGrp.style.display = "none";
+            
+            if (countryRegistry[val]) {
+                countryRegistry[val].forEach(city => {
+                    citySel.innerHTML += `<option value="${city}">${city}</option>`;
+                });
+            }
+            citySel.innerHTML += '<option value="Custom">Custom...</option>';
         }
     };
-    reader.readAsDataURL(file);
+
+    citySel.onchange = () => {
+        if (citySel.value === "Custom") {
+            customCityGrp.style.display = "flex";
+        } else {
+            customCityGrp.style.display = "none";
+        }
+    };
 }
 
-// Regenerisanje koda benda
-async function regenerateBandJoinCode(bandId) {
-    const newCode = 'GIG-' + Math.floor(100 + Math.random() * 900);
-    const { error } = await supabaseClient
-        .from('bands')
-        .update({ join_code: newCode })
-        .eq('id', bandId);
-
-    if (error) {
-        alert(error.message);
-    } else {
-        await loadUserBands();
-        const band = bands.find(b => b.id === bandId);
-        renderBandSettingsUI(band);
-    }
-}
-
-// Brisnje benda
-async function deleteBand(bandId, bandName) {
-    if (!confirm(i18n[currentLang].deleteBandConfirm)) return;
-
-    const { error } = await supabaseClient
-        .from('bands')
-        .delete()
-        .eq('id', bandId);
-
-    if (error) {
-        alert(error.message);
-    } else {
-        await loadUserBands();
-        expandedBandId = "";
-        renderSidebarBands();
-        cleanAudioEngine();
-        document.getElementById('mainContentView').innerHTML = `<div class="right-panel-wrapper"><p>${i18n[currentLang].noActiveBand}</p></div>`;
-    }
-}
-
-// Novi bend tab
-function renderNewBandUI() {
-    const view = document.getElementById('mainContentView');
-    view.innerHTML = `
-        <div class="right-panel-wrapper">
-            <h2 class="right-panel-title">➕ ${i18n[currentLang].addSectionTitle}</h2>
-            
-            <div class="input-group">
-                <label class="input-label">${i18n[currentLang].bandNameLabel}</label>
-                <input type="text" id="newBandName" class="settings-input" placeholder="Npr. Fankomatics">
-            </div>
-
-            <div class="input-group" style="margin-top: 15px;">
-                <label class="input-label">${i18n[currentLang].bandUrlLabel}</label>
-                <input type="text" id="newBandUrl" class="settings-input" placeholder="https://drive.google.com/drive/folders/...">
-            </div>
-
-            <div class="input-group" style="margin-top: 15px;">
-                <label class="input-label">${i18n[currentLang].bandWebLabel}</label>
-                <input type="text" id="newBandWeb" class="settings-input" placeholder="Opciono">
-            </div>
-
-            <div class="input-group" style="margin-top: 15px;">
-                <label class="input-label">${i18n[currentLang].bandInstagramLabel}</label>
-                <input type="text" id="newBandInstagram" class="settings-input" placeholder="Opciono">
-            </div>
-
-            <div class="input-group" style="margin-top: 15px;">
-                <label class="input-label">${i18n[currentLang].bandContactLabel}</label>
-                <input type="text" id="newBandContact" class="settings-input" placeholder="Opciono">
-            </div>
-
-            <button class="btn-connect" style="margin-top: 25px; width:100%;" onclick="addNewBandSubmit()">${i18n[currentLang].connectBtn}</button>
-        </div>
-    `;
-}
-
-// Osnivanje benda
+// Osnivanje novog benda
 async function addNewBandSubmit() {
     if (!currentUserProfile) return;
 
-    const name = document.getElementById('newBandName').value.trim();
-    const rawUrl = document.getElementById('newBandUrl').value.trim();
-    const webUrl = document.getElementById('newBandWeb').value.trim();
-    const instagramUrl = document.getElementById('newBandInstagram').value.trim();
-    const contactInfo = document.getElementById('newBandContact').value.trim();
+    const nameInput = document.getElementById('newBandName');
+    const urlInput = document.getElementById('newBandUrl');
+    const contactNameInput = document.getElementById('newBandContactName');
+    const contactPhoneInput = document.getElementById('newBandContactPhone');
+    const websiteInput = document.getElementById('newBandWebsite');
+    const instagramInput = document.getElementById('newBandInstagram');
+    
+    // Zemlja i grad selektori
+    const countrySel = document.getElementById('newBandCountry');
+    const citySel = document.getElementById('newBandCity');
+    
+    let country = countrySel.value;
+    let city = citySel.value;
 
-    if (!name || !rawUrl) {
-        alert(currentLang === 'sr' ? "Ime i Google Drive link su obavezni!" : "Name and Drive link are required!");
+    if (country === "Custom") {
+        country = document.getElementById('newBandCustomCountryInput').value.trim();
+    }
+    if (city === "Custom") {
+        city = document.getElementById('newBandCustomCityInput').value.trim();
+    }
+
+    const name = nameInput.value.trim();
+    const rawUrl = urlInput.value.trim();
+    const contactName = contactNameInput.value.trim();
+    const contactPhone = contactPhoneInput.value.trim();
+    const website = websiteInput.value.trim();
+    const instagram = instagramInput.value.trim();
+
+    if (!name || !rawUrl || !country || !city) {
+        alert(currentLang === 'sr' ? "Popunite sva obavezna polja (Naziv, Link, Država, Grad)!" : "Please fill out all required fields (Name, Link, Country, City)!");
         return;
     }
 
     const folderId = extractFolderId(rawUrl);
-    const joinCode = 'GIG-' + Math.floor(100 + Math.random() * 900);
+    
+    // 1. TROSTEPENA PROVERA: Jedinstveno ime benda u istoj zemlji i gradu
+    const { data: dupeData, error: dupeError } = await supabaseClient
+        .from('bands')
+        .select('id')
+        .eq('name', name)
+        .eq('country', country)
+        .eq('city', city);
 
+    if (dupeData && dupeData.length > 0) {
+        alert(i18n[currentLang].duplicateNameError);
+        return;
+    }
+
+    const joinCode = 'GL-' + Math.floor(1000 + Math.random() * 9000);
+
+    // Korak A: Upisujemo novi bend u bazu
     const { data: bandData, error: bandError } = await supabaseClient
         .from('bands')
         .insert({
@@ -798,19 +484,22 @@ async function addNewBandSubmit() {
             folder_id: folderId,
             raw_url: rawUrl,
             join_code: joinCode,
-            web_url: webUrl,
-            instagram_url: instagramUrl,
-            contact_info: contactInfo
+            contact_name: contactName,
+            contact_phone: contactPhone,
+            website,
+            instagram,
+            country,
+            city
         })
         .select()
         .single();
 
     if (bandError) {
-        alert(bandError.message);
+        alert(i18n[currentLang].authError.replace("{msg}", bandError.message));
         return;
     }
 
-    // Dodaj sebe kao admina
+    // Korak B: Postavljamo osnivača kao glavnog ADMINA
     const { error: memberError } = await supabaseClient
         .from('band_members')
         .insert({
@@ -820,43 +509,59 @@ async function addNewBandSubmit() {
         });
 
     if (memberError) {
-        alert(memberError.message);
-    } else {
-        await loadUserBands();
-        expandedBandId = bandData.id;
-        renderSidebarBands();
-        switchTab('dashboard', bandData.id);
-    }
-}
-
-// Pridruži se bendu tab
-function renderJoinBandUI() {
-    const view = document.getElementById('mainContentView');
-    view.innerHTML = `
-        <div class="right-panel-wrapper">
-            <h2 class="right-panel-title">🔑 ${i18n[currentLang].joinBandTitle}</h2>
-            
-            <div class="input-group">
-                <label class="input-label">${i18n[currentLang].joinCodeLabel}</label>
-                <input type="text" id="joinCodeInput" class="settings-input" placeholder="${i18n[currentLang].joinCodePlaceholder}" style="text-align: center; letter-spacing: 2px;">
-            </div>
-
-            <button class="btn-connect" style="margin-top: 25px; width: 100%;" onclick="submitJoinCode()">${i18n[currentLang].joinBandSubmitBtn}</button>
-        </div>
-    `;
-}
-
-// Pridruži se bendu submit
-async function submitJoinCode() {
-    if (!currentUserProfile) return;
-
-    const code = document.getElementById('joinCodeInput').value.trim();
-    if (!code) {
-        alert(currentLang === 'sr' ? "Unesite kod!" : "Please enter the code!");
+        alert(i18n[currentLang].authError.replace("{msg}", memberError.message));
         return;
     }
 
-    // Pronađi bend sa ovim kodom
+    nameInput.value = "";
+    urlInput.value = "";
+    contactNameInput.value = "";
+    contactPhoneInput.value = "";
+    websiteInput.value = "";
+    instagramInput.value = "";
+    
+    loadUserBands();
+}
+
+// Učitavanje logotipa benda (Base64)
+async function uploadBandLogo(event) {
+    if (!activeBandId) return;
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onloadend = async () => {
+        const base64String = reader.result;
+        
+        const { error } = await supabaseClient
+            .from('bands')
+            .update({ logo_url: base64String })
+            .eq('id', activeBandId);
+
+        if (error) {
+            alert(error.message);
+        } else {
+            // Osvežavamo aktivni bend
+            const band = bands.find(b => b.id === activeBandId);
+            if (band) band.logo_url = base64String;
+            setActiveBand(activeBandId);
+        }
+    };
+    reader.readAsDataURL(file);
+}
+
+// Priključivanje postojećem bendu pomoću Join koda
+async function submitJoinCode() {
+    if (!currentUserProfile) return;
+
+    const codeInput = document.getElementById('joinCodeInput');
+    const code = codeInput.value.trim().toUpperCase();
+
+    if (!code) {
+        alert(currentLang === 'sr' ? "Unesite pristupni kod!" : "Please enter the access code!");
+        return;
+    }
+
     const { data: bandData, error: bandError } = await supabaseClient
         .from('bands')
         .select('*')
@@ -868,7 +573,7 @@ async function submitJoinCode() {
         return;
     }
 
-    // Proveri da li je već član
+    // Proveravamo da li je korisnik već član tog benda
     const { data: isMember } = await supabaseClient
         .from('band_members')
         .select('*')
@@ -880,7 +585,7 @@ async function submitJoinCode() {
         return;
     }
 
-    // Učlani ga
+    // Upisujemo korisnika u članstvo benda
     const { error: joinError } = await supabaseClient
         .from('band_members')
         .insert({
@@ -893,67 +598,330 @@ async function submitJoinCode() {
         alert(joinError.message);
     } else {
         alert(i18n[currentLang].joinCodeSuccess);
-        await loadUserBands();
-        expandedBandId = bandData.id;
-        renderSidebarBands();
-        switchTab('dashboard', bandData.id);
+        codeInput.value = "";
+        loadUserBands();
+    }
+}
+
+// Regeneracija pristupnog koda
+async function regenerateAccessCode() {
+    if (!activeBandId) return;
+    const band = bands.find(b => b.id === activeBandId);
+    if (!band || band.userRole !== 'admin') return;
+
+    const newCode = 'GL-' + Math.floor(1000 + Math.random() * 9000);
+
+    const { error } = await supabaseClient
+        .from('bands')
+        .update({ join_code: newCode })
+        .eq('id', activeBandId);
+
+    if (error) {
+        alert(error.message);
+    } else {
+        band.join_code = newCode;
+        document.getElementById('dashboardBandCode').innerText = newCode;
+        alert(i18n[currentLang].regenerateCodeSuccess);
+    }
+}
+
+// Napuštanje benda
+async function leaveBandSubmit() {
+    if (!activeBandId || !currentUserProfile) return;
+    const band = bands.find(b => b.id === activeBandId);
+    if (!band) return;
+
+    // Ako je jedini preostali admin, ne može da napusti dok ne preda ulogu ili obriše bend
+    if (band.userRole === 'admin') {
+        const { data: admins } = await supabaseClient
+            .from('band_members')
+            .select('id')
+            .eq('band_id', activeBandId)
+            .eq('role', 'admin');
+
+        if (admins && admins.length === 1) {
+            alert(i18n[currentLang].cannotLeaveLastAdmin);
+            return;
+        }
+    }
+
+    const confirmMsg = currentLang === 'sr' ? "Da li sigurno želiš da napustiš ovaj bend?" : "Are you sure you want to leave this band?";
+    if (!confirm(confirmMsg)) return;
+
+    const { error } = await supabaseClient
+        .from('band_members')
+        .delete()
+        .eq('band_id', activeBandId)
+        .eq('user_id', currentUserProfile.id);
+
+    if (error) {
+        alert(error.message);
+    } else {
+        activeBandId = "";
+        expandedBandId = "";
+        loadUserBands();
+        switchTab('dashboard');
+    }
+}
+
+// Izbacivanje člana (samo za admine)
+async function removeBandMember(memberUserId) {
+    if (!activeBandId) return;
+    const confirmMsg = currentLang === 'sr' ? "Da li sigurno želiš da izbaciš ovog člana?" : "Are you sure you want to remove this member?";
+    if (!confirm(confirmMsg)) return;
+
+    const { error } = await supabaseClient
+        .from('band_members')
+        .delete()
+        .eq('band_id', activeBandId)
+        .eq('user_id', memberUserId);
+
+    if (error) {
+        alert(error.message);
+    } else {
+        loadBandMembersUI();
+    }
+}
+
+// Učitavanje članova benda na ekranu
+async function loadBandMembersUI() {
+    const listContainer = document.getElementById('bandMembersList');
+    listContainer.innerHTML = "";
+    if (!activeBandId) return;
+
+    const band = bands.find(b => b.id === activeBandId);
+
+    const { data: members, error } = await supabaseClient
+        .from('band_members')
+        .select(`
+            user_id,
+            role,
+            profiles:user_id ( display_name, email, avatar_url )
+        `)
+        .eq('band_id', activeBandId);
+
+    if (members) {
+        members.forEach(m => {
+            const row = document.createElement('tr');
+            const profile = m.profiles;
+            const displayName = profile ? (profile.display_name || profile.email) : "Nepoznato";
+            const roleText = m.role === 'admin' ? i18n[currentLang].roleAdmin : i18n[currentLang].roleUser;
+            
+            const isMe = m.user_id === currentUserProfile.id;
+            const canRemove = band.userRole === 'admin' && !isMe;
+
+            row.innerHTML = `
+                <td>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <div class="user-avatar" style="width: 24px; height: 24px; font-size: 0.8em;">
+                            ${profile && profile.avatar_url ? `<img src="${profile.avatar_url}">` : displayName.charAt(0).toUpperCase()}
+                        </div>
+                        ${displayName} ${isMe ? " (Ti)" : ""}
+                    </div>
+                </td>
+                <td><span class="band-role-badge" style="background-color: ${m.role === 'admin' ? '#8b5cf6' : '#4b5563'}">${roleText}</span></td>
+                <td>
+                    ${canRemove ? `<button class="btn-popup-logout" style="border: none; background: transparent; cursor: pointer; text-decoration: underline;" onclick="removeBandMember('${m.user_id}')">${i18n[currentLang].memberActionRemove}</button>` : ""}
+                </td>
+            `;
+            listContainer.appendChild(row);
+        });
+    }
+}
+
+// Sačuvanje izmena podešavanja benda (Admin)
+async function saveBandSettings() {
+    if (!activeBandId) return;
+    const band = bands.find(b => b.id === activeBandId);
+    if (!band || band.userRole !== 'admin') return;
+
+    const name = document.getElementById('editBandName').value.trim();
+    const rawUrl = document.getElementById('editBandUrl').value.trim();
+    const contactName = document.getElementById('editBandContactName').value.trim();
+    const contactPhone = document.getElementById('editBandContactPhone').value.trim();
+    const website = document.getElementById('editBandWebsite').value.trim();
+    const instagram = document.getElementById('editBandInstagram').value.trim();
+
+    if (!name || !rawUrl) {
+        alert(currentLang === 'sr' ? "Naziv i Drive link su obavezni!" : "Name and Drive link are required!");
+        return;
+    }
+
+    const folderId = extractFolderId(rawUrl);
+
+    const { error } = await supabaseClient
+        .from('bands')
+        .update({
+            name,
+            raw_url: rawUrl,
+            folder_id: folderId,
+            contact_name: contactName,
+            contact_phone: contactPhone,
+            website,
+            instagram
+        })
+        .eq('id', activeBandId);
+
+    if (error) {
+        alert(error.message);
+    } else {
+        alert(currentLang === 'sr' ? "Izmene na bendu uspešno sačuvane!" : "Band changes successfully saved!");
+        loadUserBands();
+    }
+}
+
+// Brisanje celog benda
+async function deleteBandSubmit() {
+    if (!activeBandId) return;
+    const band = bands.find(b => b.id === activeBandId);
+    if (!band || band.userRole !== 'admin') return;
+
+    if (!confirm(i18n[currentLang].deleteBandConfirm)) return;
+
+    const { error } = await supabaseClient
+        .from('bands')
+        .delete()
+        .eq('id', activeBandId);
+
+    if (error) {
+        alert(error.message);
+    } else {
+        activeBandId = "";
+        expandedBandId = "";
+        loadUserBands();
+        switchTab('dashboard');
+    }
+}
+
+// Prikaz tabli na dashboardu (prazan nalog ili ulogovani interfejs)
+function renderBandsUI() {
+    const mainDashboard = document.getElementById('bandDashboardContainer');
+    const emptyState = document.getElementById('emptyDashboardContainer');
+
+    if (bands.length > 0) {
+        mainDashboard.style.display = "block";
+        emptyState.style.display = "none";
+    } else {
+        mainDashboard.style.display = "none";
+        emptyState.style.display = "block";
+        document.getElementById('emptyStateMsg').innerText = i18n[currentLang].createFirstBandMsg;
     }
 }
 
 // ==========================================================================
-// 6. STEAM PLAYING & MIXER CONSOLE VIEW
+// 3. KORISNIČKA PODEŠAVANJA (Regional, Profil, Podrška)
 // ==========================================================================
-function renderMixerConsoleUI(band) {
-    const view = document.getElementById('mainContentView');
-    view.innerHTML = `
-        <!-- Zaglavlje Miksete -->
-        <div class="mixer-header">
-            <div class="song-info-badge">
-                <span id="activeSongName" class="active-song-title">${i18n[currentLang].statusInit}</span>
-                <span id="activeBandNameLabel" class="active-song-meta">${band.name}</span>
-            </div>
 
-            <div class="mixer-master-controls">
-                <!-- Vreme -->
-                <span id="timeDisplay" class="time-counter">00:00</span>
-                
-                <!-- Play i Stop dugmad sa integrisanim stanjem -->
-                <button id="playBtn" class="btn-control" onclick="togglePlayPause()" disabled>
-                    <span>▶ ${i18n[currentLang].playBtn}</span>
-                </button>
-                <button id="stopBtn" class="btn-control" onclick="stopAudio()" disabled>
-                    <span>◼ ${i18n[currentLang].stopBtn}</span>
-                </button>
+async function saveProfileSettings() {
+    if (!currentUserProfile) return;
+    const displayName = document.getElementById('settingDisplayName').value.trim();
 
-                <!-- Master Jačina -->
-                <div class="master-vol-container">
-                    <span id="masterVolLabel" style="font-size:0.8em; color:var(--color-text-muted);">${i18n[currentLang].masterVolLabel}</span>
-                    <input type="range" id="masterVolumeRange" class="master-vol-slider" min="0" max="1" step="0.01" value="0.8" oninput="changeMasterVolume(this.value)">
-                    <button id="masterMuteBtn" class="btn-danger-small" style="padding: 6px 10px;" onclick="toggleMasterMute()">${i18n[currentLang].masterMuteBtn}</button>
-                </div>
-            </div>
-        </div>
+    const { error } = await supabaseClient
+        .from('profiles')
+        .update({ display_name: displayName })
+        .eq('id', currentUserProfile.id);
 
-        <!-- Mikser Ploča -->
-        <div class="mixer-board-wrapper">
-            <p class="drag-drop-hint">${i18n[currentLang].dragDropTip}</p>
-            <div id="tracksContainer" class="tracks-container">
-                <!-- Kanali se dinamički crtaju levo-desno -->
-            </div>
-            
-            <p id="statusLabel" style="text-align:center; font-size:0.9em; color:var(--color-text-muted); margin-top:15px;">
-                ${i18n[currentLang].statusInit}
-            </p>
-        </div>
-    `;
+    if (error) {
+        alert(error.message);
+    } else {
+        alert(currentLang === 'sr' ? "Profil je uspešno ažuriran!" : "Profile successfully updated!");
+        location.reload();
+    }
+}
+
+async function uploadUserAvatar(event) {
+    if (!currentUserProfile) return;
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onloadend = async () => {
+        const base64String = reader.result;
+        
+        const { error } = await supabaseClient
+            .from('profiles')
+            .update({ avatar_url: base64String })
+            .eq('id', currentUserProfile.id);
+
+        if (error) {
+            alert(error.message);
+        } else {
+            alert(currentLang === 'sr' ? "Avatar uspešno postavljen!" : "Avatar successfully uploaded!");
+            location.reload();
+        }
+    };
+    reader.readAsDataURL(file);
+}
+
+async function submitSupportTicket() {
+    if (!currentUserProfile) return;
+
+    const subject = document.getElementById('supportSubject').value.trim();
+    const message = document.getElementById('supportMessage').value.trim();
+
+    if (!subject || !message) {
+        alert(currentLang === 'sr' ? "Popunite sva polja!" : "Please fill out all fields!");
+        return;
+    }
+
+    const { error } = await supabaseClient
+        .from('support_tickets')
+        .insert({
+            user_id: currentUserProfile.id,
+            user_email: currentUserProfile.email,
+            subject: subject,
+            message: message
+        });
+
+    if (error) {
+        alert(error.message);
+    } else {
+        alert(i18n[currentLang].supportSuccess);
+        document.getElementById('supportSubject').value = "";
+        document.getElementById('supportMessage').value = "";
+        closeSupportModal();
+    }
+}
+
+async function changePasswordSubmit() {
+    const newPassword = document.getElementById('settingNewPassword').value;
+    if (!newPassword || newPassword.length < 6) {
+        alert(currentLang === 'sr' ? "Lozinka mora imati najmanje 6 karaktera!" : "Password must be at least 6 characters long!");
+        return;
+    }
+
+    const { error } = await supabaseClient.auth.updateUser({ password: newPassword });
+
+    if (error) {
+        alert(error.message);
+    } else {
+        alert(currentLang === 'sr' ? "Lozinka uspešno promenjena!" : "Password successfully updated!");
+        document.getElementById('settingNewPassword').value = "";
+    }
+}
+
+async function deleteAccountSubmit() {
+    const confirmMsg = currentLang === 'sr' ? "UPOZORENJE! Da li ste sigurni da želite trajno da obrišete svoj nalog? Ova akcija je nepovratna." : "WARNING! Are you sure you want to permanently delete your account? This action is irreversible.";
+    if (!confirm(confirmMsg)) return;
+
+    const { error } = await supabaseClient
+        .from('profiles')
+        .delete()
+        .eq('id', currentUserProfile.id);
+
+    if (error) {
+        alert(error.message);
+    } else {
+        handleLogout();
+    }
 }
 
 // ==========================================================================
-// 7. GOOGLE DRIVE MUSIC LOADER
+// 4. GOOGLE DRIVE GOOGLE API AUDIO ENGINE
 // ==========================================================================
+
 function extractFolderId(url) {
-    const reg = /folders\/([a-zA-Z0-9-_]+)/;
-    const match = url.match(reg);
+    const match = url.match(/\/folders\/([a-zA-Z0-9-_]+)/);
     return match ? match[1] : url;
 }
 
@@ -961,228 +929,260 @@ async function loadSongsFromActiveBand() {
     const band = bands.find(b => b.id === activeBandId);
     if (!band || !band.folder_id) return;
 
-    if (!GOOGLE_API_KEY) {
-        statusLabel.innerText = i18n[currentLang].apiKeyWarning;
-        return;
-    }
+    songsList.innerHTML = `<div style="color: var(--text-muted);">${i18n[currentLang].statusConnecting}</div>`;
 
-    updateStatusText('statusConnecting');
-    
-    // Čitamo pesme sa Drive-a
     const url = `https://www.googleapis.com/drive/v3/files?q='${band.folder_id}'+in+parents+and+mimeType='application/vnd.google-apps.folder'+and+trashed=false&key=${GOOGLE_API_KEY}`;
     
     try {
-        const res = await fetch(url);
-        const data = await res.json();
+        const response = await fetch(url);
+        const data = await response.json();
         
-        if (data.files && data.files.length > 0) {
-            allSongs = data.files.sort((a,b) => a.name.localeCompare(b.name));
-            renderSongsUI();
-        } else {
-            songsList.innerHTML = `<p style="padding:15px; color:var(--color-text-muted); font-size:0.9em;">${i18n[currentLang].noSongs}</p>`;
-            updateStatusText('statusNoFiles');
+        if (data.error) {
+            songsList.innerHTML = `<div style="color: var(--accent-red);">${i18n[currentLang].statusConnError}</div>`;
+            return;
         }
-    } catch(e) {
-        updateStatusText('statusConnError');
+
+        allSongs = data.files || [];
+        renderSongs(allSongs);
+    } catch (e) {
+        songsList.innerHTML = `<div style="color: var(--accent-red);">${i18n[currentLang].statusConnError}</div>`;
     }
 }
 
-function renderSongsUI() {
+function renderSongs(songs) {
     songsList.innerHTML = "";
-    allSongs.forEach(song => {
-        const songDiv = document.createElement('div');
-        songDiv.className = "song-item";
-        songDiv.id = `songItem-${song.id}`;
-        songDiv.onclick = () => selectSongToPlay(song.id, song.name);
-        songDiv.innerHTML = `
-            <span class="song-name">${song.name}</span>
-        `;
-        songsList.appendChild(songDiv);
+    if (songs.length === 0) {
+        songsList.innerHTML = `<div style="color: var(--text-muted);">${i18n[currentLang].noSongs}</div>`;
+        return;
+    }
+
+    songs.sort((a, b) => a.name.localeCompare(b.name));
+
+    songs.forEach(s => {
+        const item = document.createElement('div');
+        item.className = "song-item";
+        if (currentSongName === s.name) item.className += " active";
+        item.innerText = s.name;
+        item.onclick = () => selectSong(s.id, s.name);
+        songsList.appendChild(item);
     });
 }
 
-// Učitavanje i sinhronizacija izabrane pesme
-async function selectSongToPlay(songId, songName) {
-    cleanAudioEngine(); // GVOZDENO ČIŠĆENJE pre uvoza nove pesme!
-    
-    document.querySelectorAll('.song-item').forEach(el => el.classList.remove('active'));
-    const item = document.getElementById(`songItem-${songId}`);
-    if (item) item.classList.add('active');
+function filterSongs(query) {
+    const filtered = allSongs.filter(s => s.name.toLowerCase().includes(query.toLowerCase()));
+    renderSongs(filtered);
+}
 
-    const activeTitleLabel = document.getElementById('activeSongName');
-    if (activeTitleLabel) activeTitleLabel.innerText = songName;
-
+async function selectSong(folderId, songName) {
     currentSongName = songName;
+    document.querySelectorAll('.song-item').forEach(el => {
+        if (el.innerText === songName) el.classList.add('active');
+        else el.classList.remove('active');
+    });
+
+    cleanAudioEngine();
     updateStatusText('statusLoading');
 
-    // Učitaj audio fajlove iz tog foldera pesme
-    const url = `https://www.googleapis.com/drive/v3/files?q='${songId}'+in+parents+and+trashed=false&key=${GOOGLE_API_KEY}`;
+    const url = `https://www.googleapis.com/drive/v3/files?q='${folderId}'+in+parents+and+trashed=false&key=${GOOGLE_API_KEY}`;
     
     try {
-        const res = await fetch(url);
-        const data = await res.json();
+        const response = await fetch(url);
+        const data = await response.json();
         
-        const audioFiles = (data.files || []).filter(f => 
-            f.name.endsWith('.mp3') || f.name.endsWith('.wav') || f.name.endsWith('.m4a')
-        ).sort((a,b) => a.name.localeCompare(b.name));
+        let files = data.files || [];
+        files = files.filter(f => f.name.endsWith('.mp3') || f.name.endsWith('.wav') || f.name.endsWith('.m4a'));
 
-        if (audioFiles.length === 0) {
+        if (files.length === 0) {
             updateStatusText('statusNoFiles');
             return;
         }
 
-        initAudioContext(); // Inicijalizuj čist audio kontekst i master fader!
+        files.sort((a, b) => a.name.localeCompare(b.name));
+
+        if (!audioCtx) {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
 
         audioBuffers = [];
         trackNames = [];
         gainNodes = [];
 
-        // Preuzimanje i dekodiranje traka u radnu memoriju
-        for (let i = 0; i < audioFiles.length; i++) {
-            const file = audioFiles[i];
-            const cleanName = file.name.replace(/\.[^/.]+$/, "").replace(/^\d+[\s_-]*/, "");
+        for (let i = 0; i < files.length; i++) {
+            const f = files[i];
+            const fileUrl = `https://www.googleapis.com/drive/v3/files/${f.id}?alt=media&key=${GOOGLE_API_KEY}`;
             
-            updateStatusText('statusDecoding');
-            statusLabel.innerText += `: ${cleanName} (${i+1}/${audioFiles.length})`;
-
-            const trackUrl = `https://www.googleapis.com/drive/v3/files/${file.id}?alt=media&key=${GOOGLE_API_KEY}`;
-            const fileRes = await fetch(trackUrl);
-            const arrayBuf = await fileRes.arrayBuffer();
+            updateStatusText('statusDecoding', i + 1);
+            
+            const fileResp = await fetch(fileUrl);
+            const arrayBuf = await fileResp.arrayBuffer();
             const audioBuf = await audioCtx.decodeAudioData(arrayBuf);
             
             audioBuffers.push(audioBuf);
-            trackNames.push(cleanName);
+            trackNames.push(f.name.replace(/\.[^/.]+$/, ""));
         }
 
-        buildUI();
-        
-        document.getElementById('playBtn').removeAttribute('disabled');
-        document.getElementById('stopBtn').removeAttribute('disabled');
-        updateStatusText('statusReady', audioFiles.length);
-
-    } catch(e) {
+        buildMixerUI();
+        updateStatusText('statusReady', audioBuffers.length);
+        playBtn.disabled = false;
+        stopBtn.disabled = false;
+    } catch (e) {
         updateStatusText('statusError');
-        console.error(e);
     }
 }
 
-// Isctravanje horizontalne miksete (sa drag-and-drop podrškom!)
-function buildUI() {
-    const tracksContainer = document.getElementById('tracksContainer');
-    if (!tracksContainer) return;
-    
-    tracksContainer.innerHTML = '';
-    gainNodes = []; // Resetujemo individualne gain nodove
+function buildMixerUI() {
+    const container = document.getElementById('tracksContainer');
+    container.innerHTML = "";
+
+    masterGainNode = audioCtx.createGain();
+    masterGainNode.connect(audioCtx.destination);
 
     trackNames.forEach((name, index) => {
-        const gainNode = audioCtx.createGain();
-        gainNode.gain.value = 1.0;
-        gainNodes.push(gainNode);
+        const gn = audioCtx.createGain();
+        gn.connect(masterGainNode);
+        gainNodes.push(gn);
 
         const card = document.createElement('div');
-        card.className = 'track-card';
+        card.className = "track-card";
         card.setAttribute('draggable', 'true');
-        card.setAttribute('data-index', index);
-        card.id = `trackCard-${index}`;
-
-        // Eventovi za Drag and Drop
-        card.addEventListener('dragstart', handleDragStart);
-        card.addEventListener('dragover', handleDragOver);
-        card.addEventListener('drop', handleDrop);
-        card.addEventListener('dragend', handleDragEnd);
+        card.dataset.index = index;
 
         card.innerHTML = `
             <div class="track-title">${name}</div>
             <div class="slider-container">
-                <input type="range" class="volume-slider" min="0" max="1.5" step="0.01" value="1.0" data-index="${index}" oninput="changeTrackVolume(${index}, this.value)">
+                <input type="range" class="volume-slider" min="0" max="1" step="0.01" value="0.8" data-index="${index}">
             </div>
-            <div class="channel-actions">
-                <button class="btn-mute" id="muteBtn-${index}" onclick="toggleMute(${index})">MUTE</button>
-                <button class="btn-solo" id="soloBtn-${index}" onclick="toggleSolo(${index})">SOLO</button>
+            <div class="track-controls">
+                <button class="btn-mute" id="mute-${index}" onclick="toggleMute(${index})">MUTE</button>
+                <button class="btn-solo" id="solo-${index}" onclick="toggleSolo(${index})">SOLO</button>
             </div>
         `;
+        container.appendChild(card);
+    });
 
-        tracksContainer.appendChild(card);
+    // Povezivanje fader klizača
+    document.querySelectorAll('.volume-slider').forEach(slider => {
+        slider.addEventListener('input', (e) => {
+            const idx = parseInt(e.target.dataset.index);
+            const val = parseFloat(e.target.value);
+            const isMuted = document.getElementById(`mute-${idx}`).classList.contains('active');
+            if (!isMuted) {
+                gainNodes[idx].gain.value = val;
+            }
+        });
+    });
+
+    setupDragAndDrop();
+}
+
+function toggleMute(index) {
+    const btn = document.getElementById(`mute-${index}`);
+    const slider = document.querySelector(`.volume-slider[data-index="${index}"]`);
+    const isMuted = btn.classList.toggle('active');
+
+    if (isMuted) {
+        gainNodes[index].gain.value = 0;
+    } else {
+        gainNodes[index].gain.value = parseFloat(slider.value);
+    }
+}
+
+function toggleSolo(index) {
+    const btn = document.getElementById(`solo-${index}`);
+    const isSolo = btn.classList.toggle('active');
+
+    if (isSolo) {
+        gainNodes.forEach((gn, i) => {
+            if (i !== index) {
+                gn.gain.value = 0;
+            } else {
+                const slider = document.querySelector(`.volume-slider[data-index="${i}"]`);
+                gn.gain.value = parseFloat(slider.value);
+                document.getElementById(`mute-${i}`).classList.remove('active');
+            }
+        });
+    } else {
+        gainNodes.forEach((gn, i) => {
+            const slider = document.querySelector(`.volume-slider[data-index="${i}"]`);
+            const isMuted = document.getElementById(`mute-${i}`).classList.contains('active');
+            gn.gain.value = isMuted ? 0 : parseFloat(slider.value);
+        });
+    }
+}
+
+// Drag & Drop funkcionalnost za promenu redosleda traka na mikseti
+function setupDragAndDrop() {
+    const cards = document.querySelectorAll('.track-card');
+    const container = document.getElementById('tracksContainer');
+    let dragSrcEl = null;
+
+    cards.forEach(card => {
+        card.addEventListener('dragstart', function(e) {
+            dragSrcEl = this;
+            e.dataTransfer.effectAllowed = 'move';
+            e.dataTransfer.setData('text/html', this.innerHTML);
+            this.style.opacity = '0.4';
+        });
+
+        card.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            return false;
+        });
+
+        card.addEventListener('drop', function(e) {
+            e.stopPropagation();
+            if (dragSrcEl !== this) {
+                // Razmenjujemo html sadržaj i indekse u bazu u realnom vremenu
+                dragSrcEl.style.opacity = '1';
+                
+                const srcIdx = dragSrcEl.dataset.index;
+                const destIdx = this.dataset.index;
+
+                // Zamena podataka u memoriji
+                const tempBuf = audioBuffers[srcIdx];
+                audioBuffers[srcIdx] = audioBuffers[destIdx];
+                audioBuffers[destIdx] = tempBuf;
+
+                const tempName = trackNames[srcIdx];
+                trackNames[srcIdx] = trackNames[destIdx];
+                trackNames[destIdx] = tempName;
+
+                // Rekonstruiši mikser sa novim rasporedom bez prekida muzike
+                const isAlreadyPlaying = isPlaying;
+                if (isAlreadyPlaying) {
+                    pauseOffset += audioCtx.currentTime - startTime;
+                    stopSourceNodes();
+                }
+                
+                buildMixerUI();
+
+                if (isAlreadyPlaying) {
+                    startSourceNodes(pauseOffset);
+                    startTime = audioCtx.currentTime;
+                }
+            }
+            return false;
+        });
+
+        card.addEventListener('dragend', function() {
+            this.style.opacity = '1';
+        });
     });
 }
 
-// Drag & Drop ređanje kanala
-let draggedIndex = null;
-
-function handleDragStart(e) {
-    draggedIndex = parseInt(this.getAttribute('data-index'));
-    this.classList.add('dragged');
-    e.dataTransfer.effectAllowed = 'move';
-}
-
-function handleDragOver(e) {
-    if (e.preventDefault) {
-        e.preventDefault();
+// Gvozdeno čišćenje i RAM oslobađanje audio engine-a
+function cleanAudioEngine() {
+    stopAudio();
+    if (audioCtx) {
+        audioCtx.close().then(() => {
+            audioCtx = null;
+        });
     }
-    return false;
-}
-
-function handleDragEnd() {
-    this.classList.remove('dragged');
-}
-
-function handleDrop(e) {
-    e.stopPropagation();
-    e.preventDefault();
-    const targetIndex = parseInt(this.getAttribute('data-index'));
-    
-    if (draggedIndex !== null && draggedIndex !== targetIndex) {
-        // Swap nazive
-        const tempName = trackNames[draggedIndex];
-        trackNames[draggedIndex] = trackNames[targetIndex];
-        trackNames[targetIndex] = tempName;
-
-        // Swap audio bafere
-        const tempBuffer = audioBuffers[draggedIndex];
-        audioBuffers[draggedIndex] = audioBuffers[targetIndex];
-        audioBuffers[targetIndex] = tempBuffer;
-        
-        // Ponovo iscrtaj UI sa novim poretkom
-        buildUI();
-        
-        // Ako svira, neprekidno prespoj
-        if (isPlaying) {
-            const currentOffset = pauseOffset + (audioCtx.currentTime - startTime);
-            stopSourceNodes();
-            startSourceNodes(currentOffset);
-        }
-    }
-}
-
-// ==========================================================================
-// 8. AUDIO CONTROLS & EVENT HANDLERS
-// ==========================================================================
-function togglePlayPause() {
-    initAudioContext();
-
-    if (audioCtx.state === 'suspended') {
-        audioCtx.resume();
-    }
-
-    const pBtn = document.getElementById('playBtn');
-
-    if (isPlaying) {
-        // Pauziraj
-        pauseOffset += audioCtx.currentTime - startTime;
-        stopSourceNodes();
-        isPlaying = false;
-        pBtn.querySelector('span').innerText = "▶ " + i18n[currentLang].playBtn;
-        pBtn.classList.remove('btn-play-active');
-        clearInterval(timerInterval);
-    } else {
-        // Pokreni reprodukciju
-        startSourceNodes(pauseOffset);
-        startTime = audioCtx.currentTime;
-        isPlaying = true;
-        pBtn.querySelector('span').innerText = "⏸ " + i18n[currentLang].pauseBtn;
-        pBtn.classList.add('btn-play-active');
-        timerInterval = setInterval(updateTimer, 250);
-    }
+    audioBuffers = [];
+    sourceNodes = [];
+    gainNodes = [];
+    trackNames = [];
+    document.getElementById('tracksContainer').innerHTML = "";
 }
 
 function startSourceNodes(offset = 0) {
@@ -1190,10 +1190,7 @@ function startSourceNodes(offset = 0) {
     audioBuffers.forEach((buffer, index) => {
         const source = audioCtx.createBufferSource();
         source.buffer = buffer;
-        
-        // Poveži source na individualni gain, pa na master, pa na zvučnike!
         source.connect(gainNodes[index]);
-        gainNodes[index].connect(masterGainNode);
         
         const duration = buffer.duration;
         if (offset < duration) {
@@ -1210,21 +1207,46 @@ function stopSourceNodes() {
     sourceNodes = [];
 }
 
+function playAudio() {
+    if (!audioCtx) return;
+
+    if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+    }
+
+    if (isPlaying) {
+        // Pauza
+        pauseOffset += audioCtx.currentTime - startTime;
+        stopSourceNodes();
+        isPlaying = false;
+        clearInterval(timerInterval);
+        updatePlayBtnUI();
+    } else {
+        // Play
+        startSourceNodes(pauseOffset);
+        startTime = audioCtx.currentTime;
+        isPlaying = true;
+        timerInterval = setInterval(updateTimer, 200);
+        updatePlayBtnUI();
+    }
+}
+
 function stopAudio() {
     stopSourceNodes();
     isPlaying = false;
     pauseOffset = 0;
-    
-    const pBtn = document.getElementById('playBtn');
-    if (pBtn) {
-        pBtn.querySelector('span').innerText = "▶ " + i18n[currentLang].playBtn;
-        pBtn.classList.remove('btn-play-active');
-    }
-    
-    const tDisp = document.getElementById('timeDisplay');
-    if (tDisp) tDisp.innerText = "00:00";
-    
     clearInterval(timerInterval);
+    if (document.getElementById('timeDisplay')) {
+        document.getElementById('timeDisplay').innerText = "00:00";
+    }
+    updatePlayBtnUI();
+}
+
+function resetAudioState() {
+    stopAudio();
+    currentSongName = "";
+    allSongs = [];
+    renderSongs([]);
 }
 
 function updateTimer() {
@@ -1232,327 +1254,26 @@ function updateTimer() {
     const current = pauseOffset + (audioCtx.currentTime - startTime);
     const mins = Math.floor(current / 60).toString().padStart(2, '0');
     const secs = Math.floor(current % 60).toString().padStart(2, '0');
-    const tDisp = document.getElementById('timeDisplay');
-    if (tDisp) tDisp.innerText = `${mins}:${secs}`;
-}
-
-// Individualni Volume fader
-function changeTrackVolume(index, val) {
-    if (gainNodes[index]) {
-        gainNodes[index].gain.value = parseFloat(val);
-        // Isključi MUTE ako je bio uključen i jačina se pomeri
-        const muteBtn = document.getElementById(`muteBtn-${index}`);
-        if (muteBtn && muteBtn.classList.contains('active')) {
-            muteBtn.classList.remove('active');
-        }
-    }
-}
-
-// MUTE dugme
-function toggleMute(index) {
-    const btn = document.getElementById(`muteBtn-${index}`);
-    const slider = document.querySelector(`.volume-slider[data-index="${index}"]`);
-    
-    if (btn.classList.toggle('active')) {
-        gainNodes[index].gain.value = 0;
-    } else {
-        gainNodes[index].gain.value = parseFloat(slider.value);
-    }
-}
-
-// SOLO dugme
-function toggleSolo(index) {
-    const btn = document.getElementById(`soloBtn-${index}`);
-    const isSoloActive = btn.classList.toggle('active');
-
-    if (isSoloActive) {
-        // Isključi solo sa svih drugih
-        document.querySelectorAll('.btn-solo').forEach((b, i) => {
-            if (i !== index) b.classList.remove('active');
-        });
-        
-        // Utišaj sve osim izabranog
-        gainNodes.forEach((gn, i) => {
-            if (i !== index) {
-                gn.gain.value = 0;
-            } else {
-                const sliderVal = document.querySelector(`.volume-slider[data-index="${i}"]`).value;
-                gn.gain.value = parseFloat(sliderVal);
-            }
-        });
-    } else {
-        // Vrati sve jačine na vrednosti klizača
-        gainNodes.forEach((gn, i) => {
-            const sliderVal = document.querySelector(`.volume-slider[data-index="${i}"]`).value;
-            const isMuted = document.getElementById(`muteBtn-${i}`).classList.contains('active');
-            gn.gain.value = isMuted ? 0 : parseFloat(sliderVal);
-        });
-    }
-}
-
-// Master Volume
-function changeMasterVolume(val) {
-    initAudioContext();
-    if (!isMasterMuted) {
-        masterGainNode.gain.value = parseFloat(val);
-    }
-}
-
-function toggleMasterMute() {
-    initAudioContext();
-    const btn = document.getElementById('masterMuteBtn');
-    isMasterMuted = !isMasterMuted;
-
-    if (isMasterMuted) {
-        masterGainNode.gain.value = 0;
-        btn.classList.add('active');
-        btn.style.backgroundColor = "var(--color-danger)";
-    } else {
-        const sliderVal = document.getElementById('masterVolumeRange').value;
-        masterGainNode.gain.value = parseFloat(sliderVal);
-        btn.classList.remove('active');
-        btn.style.backgroundColor = "rgba(239, 68, 68, 0.15)";
-    }
+    const display = document.getElementById('timeDisplay');
+    if (display) display.innerText = `${mins}:${secs}`;
 }
 
 // ==========================================================================
-// 9. SETTINGS MODAL & REGIONAL OPTIONS (Custom timezones / formats)
+// 5. KONTROLE INTERFEJSA (Modali, Hamburgeri, Jezik)
 // ==========================================================================
-function openSettingsModal() {
-    closeProfileMenu();
-    document.getElementById('settingsModal').style.display = 'flex';
-}
 
-function closeSettingsModal() {
-    document.getElementById('settingsModal').style.display = 'none';
-}
-
-function switchSettingsTab(tabName) {
-    document.querySelectorAll('.modal-tab').forEach(btn => btn.classList.remove('active'));
-    document.querySelectorAll('.modal-tab-content').forEach(content => content.classList.remove('active'));
-
-    document.getElementById(`tabBtn${tabName}`).classList.add('active');
-    document.getElementById(`settingsTab${tabName}`).classList.add('active');
-}
-
-// Custom Timezone i Date Format detekcija
-function checkCustomTimezone(val) {
-    const customDiv = document.getElementById('customTimezoneGroup');
-    if (val === 'custom') {
-        customDiv.style.display = 'flex';
+function updatePlayBtnUI() {
+    const playSpan = playBtn.querySelector('span');
+    if (isPlaying) {
+        playBtn.classList.add('active');
+        playSpan.innerText = i18n[currentLang].pauseBtn;
     } else {
-        customDiv.style.display = 'none';
+        playBtn.classList.remove('active');
+        playSpan.innerText = i18n[currentLang].playBtn;
     }
-}
-
-function checkCustomDateFormat(val) {
-    const customDiv = document.getElementById('customDateFormatGroup');
-    if (val === 'custom') {
-        customDiv.style.display = 'flex';
-    } else {
-        customDiv.style.display = 'none';
-    }
-}
-
-// Profilna izmena i Base64 slika
-async function saveUserProfileSettings() {
-    if (!currentUserProfile) return;
-    const name = document.getElementById('settingDisplayName').value.trim();
-    if (!name) return;
-
-    const { error } = await supabaseClient
-        .from('profiles')
-        .update({ display_name: name })
-        .eq('id', currentUserProfile.id);
-
-    if (error) {
-        alert(error.message);
-    } else {
-        alert(i18n[currentLang].saveSuccess);
-        loadUserProfile(supabaseClient.auth.user() || currentUserProfile);
-    }
-}
-
-function uploadUserAvatar(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = async function(e) {
-        const base64Data = e.target.result;
-        
-        const { error } = await supabaseClient
-            .from('profiles')
-            .update({ avatar_url: base64Data })
-            .eq('id', currentUserProfile.id);
-
-        if (error) {
-            alert(error.message);
-        } else {
-            document.getElementById('settingAvatarPreview').src = base64Data;
-            loadUserProfile({ id: currentUserProfile.id, email: document.getElementById('settingEmail').value });
-        }
-    };
-    reader.readAsDataURL(file);
-}
-
-// Promena šifre
-async function changeUserPassword() {
-    const newPass = document.getElementById('settingNewPassword').value;
-    if (!newPass || newPass.length < 6) {
-        alert(currentLang === 'sr' ? "Šifra mora imati najmanje 6 karaktera!" : "Password must be at least 6 characters!");
-        return;
-    }
-
-    const { error } = await supabaseClient.auth.updateUser({ password: newPass });
-
-    if (error) {
-        alert(error.message);
-    } else {
-        alert(i18n[currentLang].saveSuccess);
-        document.getElementById('settingNewPassword').value = "";
-    }
-}
-
-// Brisanje naloga
-async function deleteUserAccount() {
-    if (!confirm(i18n[currentLang].accountDeleteConfirm)) return;
-    
-    // U realnom sistemu poziva se edge funkcija za brisanje, ovde čistimo podatke korisnika
-    const { error } = await supabaseClient.from('profiles').delete().eq('id', currentUserProfile.id);
-    if (error) {
-        alert(error.message);
-    } else {
-        await supabaseClient.auth.signOut();
-        window.location.reload();
-    }
-}
-
-// ==========================================================================
-// 10. MULTILANGUAGE ENGINE
-// ==========================================================================
-function setLanguage(lang) {
-    currentLang = lang;
-    localStorage.setItem('gigstems_lang', lang);
-
-    // Obeleži aktivne pilule na jeziku
-    document.querySelectorAll('.lang-pill').forEach(btn => {
-        if (btn.innerText.toLowerCase() === lang) {
-            btn.classList.add('active');
-        } else {
-            btn.classList.remove('active');
-        }
-    });
-
-    // Ako smo na ekranu za prijavu
-    if (authContainer && authContainer.style.display !== "none") {
-        updateAuthUILang();
-        const emailLabel = document.getElementById('authEmailLabel');
-        const passLabel = document.getElementById('authPasswordLabel');
-        const dNameLabel = document.getElementById('authDisplayNameLabel');
-        
-        if (emailLabel) emailLabel.innerText = i18n[lang].authEmail;
-        if (passLabel) passLabel.innerText = i18n[lang].authPassword;
-        if (dNameLabel) dNameLabel.innerText = i18n[lang].authDisplayName;
-        return;
-    }
-
-    // Prevodi modalnog prozora podešavanja
-    const modalTitle = document.getElementById('modalSettingsTitle');
-    if (modalTitle) modalTitle.innerText = i18n[lang].settingsTitle;
-    
-    const tabRegional = document.getElementById('tabBtnRegional');
-    const tabProfile = document.getElementById('tabBtnProfile');
-    const tabPassword = document.getElementById('tabBtnPassword');
-    const tabAccount = document.getElementById('tabBtnAccount');
-    if (tabRegional) tabRegional.innerText = i18n[lang].settingTabApp;
-    if (tabProfile) tabProfile.innerText = i18n[lang].settingTabProfile;
-    if (tabPassword) tabPassword.innerText = i18n[lang].settingTabPassword;
-    if (tabAccount) tabAccount.innerText = i18n[lang].settingTabAccount;
-
-    // Prevodi unutar Aplikacija taba
-    const timeLabel = document.getElementById('timeFormatLabel');
-    const dateLabel = document.getElementById('dateFormatLabel');
-    const tzLabel = document.getElementById('timezoneLabel');
-    const tempLabel = document.getElementById('tempUnitLabel');
-    if (timeLabel) timeLabel.innerText = i18n[lang].timeFormatLabel;
-    if (dateLabel) dateLabel.innerText = i18n[lang].dateFormatLabel;
-    if (tzLabel) tzLabel.innerText = i18n[lang].timezoneLabel;
-    if (tempLabel) tempLabel.innerText = i18n[lang].tempUnitLabel;
-
-    // Prevodi unutar Profil taba
-    const profEmailL = document.getElementById('profileEmailLabel');
-    const profNameL = document.getElementById('profileNameLabel');
-    const profAvL = document.getElementById('profileAvatarLabel');
-    const profSavB = document.getElementById('profileSaveBtn');
-    if (profEmailL) profEmailL.innerText = i18n[lang].profileEmailLabel;
-    if (profNameL) profNameL.innerText = i18n[lang].profileNameLabel;
-    if (profAvL) profAvL.innerText = i18n[lang].profileAvatarLabel;
-    if (profSavB) profSavB.innerText = i18n[lang].profileSaveBtn;
-
-    // Lozinka i Nalog
-    const pNewL = document.getElementById('passwordNewLabel');
-    const pSavB = document.getElementById('passwordSaveBtn');
-    if (pNewL) pNewL.innerText = i18n[lang].passwordNewLabel;
-    if (pSavB) pSavB.innerText = i18n[lang].passwordSaveBtn;
-
-    const accTitle = document.getElementById('accountDangerTitle');
-    const accText = document.getElementById('accountDangerText');
-    const accDelB = document.getElementById('accountDeleteBtn');
-    if (accTitle) accTitle.innerText = i18n[lang].accountDangerTitle;
-    if (accText) accText.innerText = i18n[lang].accountDangerText;
-    if (accDelB) accDelB.innerText = i18n[lang].accountDeleteBtn;
-
-    // Sidebar naslov i opcije dodavanja
-    const sidebarHeader = document.getElementById('sidebarBandsHeader');
-    if (sidebarHeader) sidebarHeader.innerText = i18n[lang].navBands;
-    
-    const optNew = document.getElementById('optNewBandSidebar');
-    const optJoin = document.getElementById('optJoinBandSidebar');
-    if (optNew) optNew.innerText = i18n[lang].sidebarNewBandOption;
-    if (optJoin) optJoin.innerText = i18n[lang].sidebarJoinBandOption;
-
-    // Repertoar spisak naslov i pretraga
-    const songsTitle = document.getElementById('songsTitle');
-    const searchInput = document.getElementById('searchInput');
-    if (songsTitle) songsTitle.innerText = i18n[lang].songsTitle;
-    if (searchInput) searchInput.placeholder = i18n[lang].searchPlaceholder;
-
-    // Osveži aktivni tab da se primene prevodi
-    switchTab(currentTab, activeBandId);
-}
-
-// ==========================================================================
-// 11. POMOĆNE UI FUNKCIJE
-// ==========================================================================
-function toggleProfileMenu(e) {
-    if (e) e.stopPropagation();
-    const menu = document.getElementById('profilePopupMenu');
-    menu.style.display = menu.style.display === 'none' ? 'flex' : 'none';
-}
-
-function closeProfileMenu() {
-    const menu = document.getElementById('profilePopupMenu');
-    if (menu) menu.style.display = 'none';
-}
-
-// Mobilna navigacija
-function toggleMobileSidebar() {
-    const sidebar = document.getElementById('appSidebar');
-    const overlay = document.getElementById('sidebarOverlay');
-    sidebar.classList.toggle('active');
-    overlay.classList.toggle('active');
-}
-
-function closeAllMobilePanels() {
-    const sidebar = document.getElementById('appSidebar');
-    const overlay = document.getElementById('sidebarOverlay');
-    if (sidebar) sidebar.classList.remove('active');
-    if (overlay) overlay.classList.remove('active');
 }
 
 function updateStatusText(key, count = 0) {
-    if (!statusLabel) return;
     let text = i18n[currentLang][key] || key;
     if (count > 0) {
         text = text.replace('{count}', count);
@@ -1560,11 +1281,260 @@ function updateStatusText(key, count = 0) {
     statusLabel.innerText = text;
 }
 
-// Zatvaranje popupa na klik van njega
-document.addEventListener('click', () => {
+function setLanguage(lang) {
+    currentLang = lang;
+    localStorage.setItem('gigstems_lang', lang);
+    
+    // Aktivno dugme SR/EN na login i sidebar-u
+    document.querySelectorAll('.lang-btn').forEach(btn => {
+        if (btn.innerText.toLowerCase() === lang) btn.classList.add('active');
+        else btn.classList.remove('active');
+    });
+
+    // Prevođenje HTML natpisa
+    document.getElementById('songsTitle').innerText = i18n[lang].songsTitle;
+    document.getElementById('searchInput').placeholder = i18n[lang].searchPlaceholder;
+    document.getElementById('playBtn').querySelector('span').innerText = isPlaying ? i18n[lang].pauseBtn : i18n[lang].playBtn;
+    document.getElementById('stopBtn').querySelector('span').innerText = i18n[lang].stopBtn;
+    document.getElementById('masterMuteBtn').innerText = isMasterMuted ? i18n[lang].masterMuteBtn : i18n[lang].masterMuteBtn;
+    document.getElementById('masterVolLabel').innerText = i18n[lang].masterVolLabel;
+    
+    document.getElementById('sidebarBandsHeader').innerText = i18n[lang].navBands;
+    document.getElementById('subtitleText').innerText = i18n[lang].subtitle;
+
+    // Prevodi modal podešavanja
+    document.getElementById('modalSettingsTitle').innerText = i18n[lang].btnSettings;
+    document.getElementById('tabBtnRegional').innerText = currentLang === 'sr' ? "Aplikacija" : "Application";
+    document.getElementById('tabBtnProfile').innerText = currentLang === 'sr' ? "Profil" : "Profile";
+    document.getElementById('tabBtnPassword').innerText = currentLang === 'sr' ? "Lozinka" : "Password";
+    document.getElementById('tabBtnAccount').innerText = currentLang === 'sr' ? "Nalog" : "Account";
+
+    // Novi bend prevodi
+    document.getElementById('newBandTitle').innerText = i18n[lang].addSectionTitle;
+    document.getElementById('newBandNameLabel').innerText = i18n[lang].bandNameLabel;
+    document.getElementById('newBandUrlLabel').innerText = i18n[lang].bandUrlLabel;
+    document.getElementById('newBandContactNameLabel').innerText = i18n[lang].bandContactNameLabel;
+    document.getElementById('newBandContactPhoneLabel').innerText = i18n[lang].bandContactPhoneLabel;
+    document.getElementById('newBandWebsiteLabel').innerText = i18n[lang].bandWebsiteLabel;
+    document.getElementById('newBandInstagramLabel').innerText = i18n[lang].bandInstagramLabel;
+    document.getElementById('newBandCountryLabel').innerText = i18n[lang].bandCountryLabel;
+    document.getElementById('newBandCityLabel').innerText = i18n[lang].bandCityLabel;
+    document.getElementById('newBandSubmitBtn').innerText = i18n[lang].connectBtn;
+
+    // Izmena benda prevodi
+    document.getElementById('editBandTitle').innerText = i18n[lang].editSectionTitle;
+    document.getElementById('editBandNameLabel').innerText = i18n[lang].renameBandLabel;
+    document.getElementById('editBandUrlLabel').innerText = i18n[lang].renameBandUrlLabel;
+    document.getElementById('editBandContactNameLabel').innerText = i18n[lang].bandContactNameLabel;
+    document.getElementById('editBandContactPhoneLabel').innerText = i18n[lang].bandContactPhoneLabel;
+    document.getElementById('editBandWebsiteLabel').innerText = i18n[lang].bandWebsiteLabel;
+    document.getElementById('editBandInstagramLabel').innerText = i18n[lang].bandInstagramLabel;
+    document.getElementById('editBandCountryLabel').innerText = i18n[lang].bandCountryLabel;
+    document.getElementById('editBandCityLabel').innerText = i18n[lang].bandCityLabel;
+    document.getElementById('editBandSaveBtn').innerText = i18n[lang].renameBtn;
+    document.getElementById('editBandDeleteBtn').innerText = i18n[lang].deleteSectionTitle;
+
+    // Podrška prevodi
+    document.getElementById('supportModalTitle').innerText = i18n[lang].supportTitle;
+    document.getElementById('supportSubjectLabel').innerText = i18n[lang].supportSubjectLabel;
+    document.getElementById('supportMessageLabel').innerText = i18n[lang].supportMessageLabel;
+    document.getElementById('supportSubmitBtn').innerText = i18n[lang].supportBtn;
+
+    // Pridruživanje prevodi
+    document.getElementById('joinBandTitle').innerText = i18n[lang].joinCodeBtn;
+    document.getElementById('joinCodeLabel').innerText = i18n[lang].joinCodeLabel;
+    document.getElementById('joinCodeInput').placeholder = i18n[lang].joinCodePlaceholder;
+    document.getElementById('joinCodeSubmitBtn').innerText = i18n[lang].joinCodeBtn;
+
+    // Dashboard grid tasteri
+    document.getElementById('gridBtnSongs').innerText = i18n[lang].btnSongs;
+    document.getElementById('gridBtnMembers').innerText = i18n[lang].btnMembers;
+    document.getElementById('gridBtnSettings').innerText = i18n[lang].btnSettings;
+    document.getElementById('gridBtnConcerts').innerText = i18n[lang].btnConcerts;
+    document.getElementById('gridBtnKit').innerText = i18n[lang].btnKit;
+    document.getElementById('gridBtnDocs').innerText = i18n[lang].btnDocs;
+
+    // Auth screen prevodi
+    if (isRegisterMode) {
+        document.getElementById('authTitle').innerText = i18n[lang].authTitleRegister;
+        document.getElementById('authSubmitBtn').innerText = i18n[lang].authBtnRegister;
+        document.getElementById('authSwitchLink').innerText = i18n[lang].authSwitchToLogin;
+    } else {
+        document.getElementById('authTitle').innerText = i18n[lang].authTitleLogin;
+        document.getElementById('authSubmitBtn').innerText = i18n[lang].authBtnLogin;
+        document.getElementById('authSwitchLink').innerText = i18n[lang].authSwitchToRegister;
+    }
+    document.getElementById('authDisplayNameLabel').innerText = i18n[lang].authDisplayName;
+    document.getElementById('authEmailLabel').innerText = i18n[lang].authEmail;
+    document.getElementById('authPasswordLabel').innerText = i18n[lang].authPassword;
+
+    if (!currentSongName) {
+        updateStatusText('statusInit');
+    }
+
+    renderSidebarBands();
+    renderBandsUI();
+}
+
+// Master Mute i Volum kontrola
+let isMasterMuted = false;
+function toggleMasterMute() {
+    isMasterMuted = !isMasterMuted;
+    const btn = document.getElementById('masterMuteBtn');
+    if (isMasterMuted) {
+        btn.classList.add('active');
+        btn.innerText = currentLang === 'sr' ? 'ODMUTIRAJ SVE' : 'UNMUTE ALL';
+        if (masterGainNode) masterGainNode.gain.value = 0;
+    } else {
+        btn.classList.remove('active');
+        btn.innerText = i18n[currentLang].masterMuteBtn;
+        if (masterGainNode) {
+            const vol = parseFloat(document.getElementById('masterVolumeRange').value);
+            masterGainNode.gain.value = vol;
+        }
+    }
+}
+
+function setMasterVolume(val) {
+    if (masterGainNode && !isMasterMuted) {
+        masterGainNode.gain.value = parseFloat(val);
+    }
+}
+
+// Kontrola Hamburger menija za mobilne uređaje
+function toggleMobileSidebar() {
+    const sidebar = document.getElementById('appSidebar');
+    const overlay = document.getElementById('sidebarOverlay');
+    sidebar.classList.toggle('open');
+    overlay.classList.toggle('open');
+}
+
+function closeAllMobilePanels() {
+    document.getElementById('appSidebar').classList.remove('open');
+    document.getElementById('sidebarOverlay').classList.remove('open');
+}
+
+// Profil pop-up meni
+function toggleProfileMenu(e) {
+    e.stopPropagation();
+    const menu = document.getElementById('profilePopupMenu');
+    menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+}
+
+function closeProfileMenu() {
+    document.getElementById('profilePopupMenu').style.display = 'none';
+}
+
+// Modalni prozori
+function openSettingsModal() {
     closeProfileMenu();
-});
+    document.getElementById('settingsModal').style.display = 'flex';
+    switchSettingsTab('Regional');
+}
+
+function closeSettingsModal() {
+    document.getElementById('settingsModal').style.display = 'none';
+}
+
+function openSupportModal() {
+    closeProfileMenu();
+    document.getElementById('supportModal').style.display = 'flex';
+}
+
+function closeSupportModal() {
+    document.getElementById('supportModal').style.display = 'none';
+}
+
+function switchSettingsTab(tabName) {
+    document.querySelectorAll('.modal-tab').forEach(btn => {
+        if (btn.id === `tabBtn${tabName}`) btn.classList.add('active');
+        else btn.classList.remove('active');
+    });
+
+    document.querySelectorAll('.modal-tab-content').forEach(content => {
+        if (content.id === `settingsTab${tabName}`) content.style.display = 'block';
+        else content.style.display = 'none';
+    });
+}
+
+// Custom input detekcija
+function setupCustomInputDetection(prefix) {
+    const tzSel = document.getElementById(`setting${prefix}`);
+    const customGrp = document.getElementById(`custom${prefix}Group`);
+    if (!tzSel) return;
+    
+    tzSel.onchange = () => {
+        if (tzSel.value === "Custom") {
+            customGrp.style.display = "flex";
+        } else {
+            customGrp.style.display = "none";
+        }
+    };
+}
+
+// Učitavanje i inicijalizacija sačuvanih opcija
+function loadSavedSettings() {
+    const tz = localStorage.getItem('gigstems_tz') || 'Europe/Belgrade';
+    const df = localStorage.getItem('gigstems_df') || 'dd.mm.yyyy';
+    const tf = localStorage.getItem('gigstems_tf') || '24h';
+    const tu = localStorage.getItem('gigstems_tu') || 'C';
+
+    document.getElementById('settingTimeFormat').value = tf;
+    document.getElementById('settingTempUnit').value = tu;
+
+    const tzSel = document.getElementById('settingTimezone');
+    if ([...tzSel.options].some(o => o.value === tz)) {
+        tzSel.value = tz;
+    } else {
+        tzSel.value = "Custom";
+        document.getElementById('customTimezoneGroup').style.display = "flex";
+        document.getElementById('customTimezoneInput').value = tz;
+    }
+
+    const dfSel = document.getElementById('settingDateFormat');
+    if ([...dfSel.options].some(o => o.value === df)) {
+        dfSel.value = df;
+    } else {
+        dfSel.value = "Custom";
+        document.getElementById('customDateFormatGroup').style.display = "flex";
+        document.getElementById('customDateFormatInput').value = df;
+    }
+}
+
+function saveApplicationSettings() {
+    const tf = document.getElementById('settingTimeFormat').value;
+    const tu = document.getElementById('settingTempUnit').value;
+    
+    let tz = document.getElementById('settingTimezone').value;
+    if (tz === "Custom") {
+        tz = document.getElementById('customTimezoneInput').value.trim();
+    }
+    
+    let df = document.getElementById('settingDateFormat').value;
+    if (df === "Custom") {
+        df = document.getElementById('customDateFormatInput').value.trim();
+    }
+
+    localStorage.setItem('gigstems_tf', tf);
+    localStorage.setItem('gigstems_tu', tu);
+    localStorage.setItem('gigstems_tz', tz);
+    localStorage.setItem('gigstems_df', df);
+
+    alert(currentLang === 'sr' ? "Aplikativna podešavanja su uspešno sačuvana!" : "Application settings successfully saved!");
+}
+
+// Zatvaranje popupa klikom bilo gde van
+window.onclick = (e) => {
+    if (!e.target.closest('.user-profile-trigger')) {
+        closeProfileMenu();
+    }
+};
 
 window.onload = () => {
+    loadSavedSettings();
+    setupCountryCitySelectors('new');
+    setupCountryCitySelectors('edit');
+    setupCustomInputDetection('Timezone');
+    setupCustomInputDetection('DateFormat');
     setLanguage(currentLang);
 };
