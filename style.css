@@ -1,45 +1,26 @@
 /* ==========================================================================
-   GIGLAB STYLE - VERZIJA 1.4.08 (Gospodski tamni binski dizajn)
+   GIGLAB CSS STYLING - VERZIJA 1.4.08
    ========================================================================== */
 
-/* Korenska podešavanja i resetovanja - krupniji fontovi za 100% zuma */
+/* Osnovna resetovanja i mračna tema - UJEDNAČENI I TANKI FONTOVI GLOBALNO */
 * {
     box-sizing: border-box;
     margin: 0;
     padding: 0;
-    font-weight: 300; /* Tanak elegantan font podrazumevano */
-}
-
-:root {
-    --bg-main: #070a13;
-    --bg-card: #111827;
-    --bg-input: #0b0f19;
-    --bg-hover: #1f2937;
-    --border-color: #1f2937;
-    --text-primary: #f8fafc;
-    --text-secondary: #9ca3af;
-    --text-muted: #4b5563;
-    --accent-purple: #8b5cf6;
-    --accent-purple-hover: #7c3aed;
-    --accent-green: #10b981;
-    --accent-green-hover: #059669;
-    --accent-red: #ef4444;
-    --accent-red-hover: #dc2626;
-    --accent-gold: #eab308;
-    --font-base: 16px; /* Krupnija korenska baza za čitljivost bez naočara */
+    font-weight: 300;
 }
 
 body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    background-color: var(--bg-main);
-    color: var(--text-primary);
-    font-size: var(--font-base);
+    background-color: #0b0f19;
+    color: #f8fafc;
     height: 100vh;
     overflow: hidden;
+    font-size: 16px; /* Krupnija i gospodska slova po difoltu */
 }
 
 h1, h2, h3, h4 {
-    font-weight: 400;
+    font-weight: 300;
 }
 
 /* Kontejner aplikacije - Troslojni raspored (SPA layout) */
@@ -51,12 +32,12 @@ h1, h2, h3, h4 {
 }
 
 /* ==========================================================================
-   KOLONA 1: Glavni Sidebar (Navigacija, Bendovi, Profil, Futer)
+   KOLONA 1: Glavni Sidebar (Navigacija, Bendovi, Korisnički Profil)
    ========================================================================== */
 .sidebar {
-    width: 260px; /* Malo prošireno radi boljeg prostora */
-    background-color: var(--bg-card);
-    border-right: 1px solid var(--border-color);
+    width: 250px;
+    background-color: #111827;
+    border-right: 1px solid #1f2937;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
@@ -72,22 +53,22 @@ h1, h2, h3, h4 {
 }
 
 .sidebar-logo {
-    font-size: 1.6em;
+    font-size: 1.5em;
     font-weight: 400;
-    color: var(--accent-purple);
+    color: #8b5cf6;
     letter-spacing: 1px;
     display: block;
-    margin-bottom: 5px;
 }
 
 .subtitle {
-    font-size: 0.8em;
-    color: var(--text-muted);
+    font-size: 0.75em;
+    color: #4b5563;
+    margin-top: 3px;
 }
 
 .sidebar-divider {
     height: 1px;
-    background-color: var(--border-color);
+    background-color: #1f2937;
     margin: 15px 0;
 }
 
@@ -102,155 +83,118 @@ h1, h2, h3, h4 {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 15px;
+    margin-bottom: 12px;
     padding: 0 5px;
 }
 
 .sidebar-section-title {
-    font-size: 0.85em;
+    font-size: 0.8em;
     text-transform: uppercase;
     letter-spacing: 1px;
-    color: var(--text-muted);
+    color: #4b5563;
 }
 
-/* Suptilno "+" dugme u sidebar-u */
 .btn-sidebar-add-plus {
     background: transparent;
     border: none;
-    color: var(--accent-purple);
-    font-size: 1.2em;
+    color: #8b5cf6;
+    font-size: 1.1em;
     cursor: pointer;
-    transition: color 0.2s ease, transform 0.2s ease;
+    transition: transform 0.2s ease, color 0.2s ease;
 }
 
 .btn-sidebar-add-plus:hover {
-    color: var(--text-primary);
-    transform: scale(1.1);
+    transform: scale(1.15);
+    color: #a78bfa;
 }
 
-/* Sidebar dodavanje benda (padajuće opcije) */
-.sidebar-add-dropdown {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    background-color: var(--bg-input);
-    border: 1px solid var(--border-color);
-    border-radius: 6px;
-    padding: 6px;
-    margin-bottom: 12px;
-}
-
-.sidebar-add-drop-item {
-    display: block;
-    width: 100%;
-    padding: 8px 10px;
-    background: transparent;
-    border: none;
-    color: var(--text-secondary);
-    font-size: 0.85em;
-    text-align: left;
-    cursor: pointer;
-    border-radius: 4px;
-    transition: all 0.2s ease;
-}
-
-.sidebar-add-drop-item:hover {
-    background-color: var(--bg-hover);
-    color: var(--text-primary);
-}
-
-/* Lista bendova (stablo/accordion) */
+/* Sidebar bands lista sa podmenijem */
 .sidebar-band-item-wrapper {
-    margin-bottom: 8px;
+    margin-bottom: 6px;
+    border-radius: 8px;
+    overflow: hidden;
 }
 
 .sidebar-band-row {
     display: flex;
     align-items: center;
-    padding: 12px 14px;
+    padding: 10px 12px;
     background: transparent;
-    border-radius: 8px;
-    color: var(--text-secondary);
-    font-size: 0.95em;
+    border-radius: 6px;
+    color: #9ca3af;
+    font-size: 0.9em;
     cursor: pointer;
     transition: all 0.2s ease;
     user-select: none;
 }
 
 .sidebar-band-row:hover {
-    background-color: var(--bg-hover);
-    color: var(--text-primary);
+    background-color: #1f2937;
+    color: #f3f4f6;
 }
 
-.sidebar-band-row.active {
-    background-color: var(--bg-hover);
-    color: var(--accent-purple);
-    font-weight: 400;
+.sidebar-band-item-wrapper.active .sidebar-band-row {
+    color: #8b5cf6;
+    background-color: rgba(139, 92, 246, 0.05);
 }
 
 .dot-icon {
     font-size: 0.6em;
-    margin-right: 12px;
-    color: var(--text-muted);
+    margin-right: 10px;
+    color: #4b5563;
 }
 
-.sidebar-band-row.active .dot-icon, .sidebar-band-row:hover .dot-icon {
-    color: var(--accent-purple);
+.sidebar-band-item-wrapper.active .dot-icon, .sidebar-band-row:hover .dot-icon {
+    color: #8b5cf6;
 }
 
 .band-title-text {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    font-size: 0.95em;
 }
 
-/* Podmeni unutar Sidebara (Stablo) */
-.sidebar-band-submenu {
-    margin-left: 15px;
+/* Podmeni unutar Sidebara (Stablo bez trouglova) */
+.sidebar-band-sub-menu {
+    margin-left: 20px;
     margin-top: 4px;
-    border-left: 1px solid var(--border-color);
+    border-left: 1px solid #1f2937;
     padding-left: 10px;
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 4px;
 }
 
-.nav-sub-item {
-    display: block;
-    width: 100%;
+.sub-menu-item {
     padding: 8px 10px;
     background: transparent;
     border: none;
-    color: var(--text-secondary);
-    font-size: 0.85em;
+    color: #6b7280;
+    font-size: 0.82em;
     text-align: left;
     cursor: pointer;
     border-radius: 4px;
     transition: all 0.2s ease;
 }
 
-.nav-sub-item:hover {
-    color: var(--text-primary);
-    background-color: var(--bg-hover);
-}
-
-.nav-sub-item.active {
+.sub-menu-item:hover, .sub-menu-item.active {
     color: #38bdf8;
-    background-color: var(--bg-hover);
+    background-color: #1f2937;
 }
 
-/* Donji deo sidebara (Profil & Prijava) */
+/* Donji deo sidebara (Profil & Prijava - Giglist stil) */
 .sidebar-footer {
     padding: 15px;
-    background-color: var(--bg-card);
+    background-color: #111827;
     position: relative;
 }
 
 .user-profile-trigger {
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 10px 12px;
+    gap: 10px;
+    padding: 8px 10px;
     border-radius: 8px;
     cursor: pointer;
     transition: background-color 0.2s ease;
@@ -258,20 +202,27 @@ h1, h2, h3, h4 {
 }
 
 .user-profile-trigger:hover {
-    background-color: var(--bg-hover);
+    background-color: #1f2937;
 }
 
 .user-avatar {
-    width: 36px;
-    height: 36px;
-    background-color: var(--accent-purple);
+    width: 32px;
+    height: 32px;
+    background-color: #8b5cf6;
     color: #fff;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.0em;
-    font-weight: 400;
+    font-size: 0.9em;
+    font-weight: bold;
+    overflow: hidden;
+}
+
+.user-avatar-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
 }
 
 .user-info-text {
@@ -282,28 +233,28 @@ h1, h2, h3, h4 {
 }
 
 .user-name {
-    font-size: 0.95em;
-    color: var(--text-primary);
+    font-size: 0.9em;
+    color: #f3f4f6;
 }
 
 .caret-icon {
-    font-size: 0.8em;
-    color: var(--text-muted);
+    font-size: 0.7em;
+    color: #4b5563;
 }
 
 /* Popup meni iznad profila */
 .profile-popup-menu {
     position: absolute;
-    bottom: 70px;
+    bottom: 65px;
     left: 15px;
     right: 15px;
-    background-color: var(--bg-hover);
-    border: 1px solid var(--border-color);
+    background-color: #1f2937;
+    border: 1px solid #374151;
     border-radius: 8px;
     display: flex;
     flex-direction: column;
-    padding: 6px;
-    box-shadow: 0 -4px 15px rgba(0,0,0,0.4);
+    padding: 5px;
+    box-shadow: 0 -4px 15px rgba(0,0,0,0.3);
     z-index: 110;
 }
 
@@ -311,8 +262,8 @@ h1, h2, h3, h4 {
     padding: 10px 12px;
     background: transparent;
     border: none;
-    color: var(--text-secondary);
-    font-size: 0.9em;
+    color: #d1d5db;
+    font-size: 0.85em;
     text-align: left;
     cursor: pointer;
     border-radius: 5px;
@@ -320,7 +271,7 @@ h1, h2, h3, h4 {
 }
 
 .popup-item:hover {
-    background-color: var(--border-color);
+    background-color: #374151;
     color: #fff;
 }
 
@@ -330,37 +281,36 @@ h1, h2, h3, h4 {
 
 .btn-popup-logout:hover {
     background-color: rgba(239, 68, 68, 0.1);
-    color: var(--accent-red);
+    color: #ef4444;
 }
 
-/* Futer na dnu sidebara */
 .sidebar-app-footer {
     margin-top: 15px;
-    padding: 0 10px;
-    font-size: 0.8em;
-    color: var(--text-muted);
+    padding: 10px 5px 0 5px;
+    font-size: 0.72em;
+    color: #4b5563;
     line-height: 1.4;
-    border-top: 1px solid var(--border-color);
-    padding-top: 12px;
+    border-top: 1px solid #1f2937;
 }
 
 .support-link {
     cursor: pointer;
-    margin-bottom: 6px;
+    margin-bottom: 4px;
+    color: #8b5cf6;
     transition: color 0.2s ease;
 }
 
 .support-link:hover {
-    color: var(--accent-purple);
+    color: #a78bfa;
 }
 
 /* ==========================================================================
    KOLONA 2: Repertoar / Lista Pesama (Središnji sloj)
    ========================================================================== */
 .repertoire-column {
-    width: 300px;
-    background-color: var(--bg-main);
-    border-right: 1px solid var(--border-color);
+    width: 280px;
+    background-color: #0b0f19;
+    border-right: 1px solid #1f2937;
     display: flex;
     flex-direction: column;
     height: 100%;
@@ -371,23 +321,23 @@ h1, h2, h3, h4 {
 
 .search-container {
     padding: 15px;
-    border-bottom: 1px solid var(--border-color);
+    border-bottom: 1px solid #1f2937;
 }
 
 .search-input {
     width: 100%;
-    padding: 10px 14px;
-    background-color: var(--bg-card);
-    border: 1px solid var(--border-color);
+    padding: 8px 12px;
+    background-color: #111827;
+    border: 1px solid #1f2937;
     border-radius: 8px;
-    color: var(--text-primary);
+    color: #f8fafc;
     outline: none;
-    font-size: 0.95em;
+    font-size: 0.85em;
     transition: border-color 0.2s ease;
 }
 
 .search-input:focus {
-    border-color: var(--accent-purple);
+    border-color: #8b5cf6;
 }
 
 .songs-title-container {
@@ -398,26 +348,25 @@ h1, h2, h3, h4 {
 }
 
 .songs-title {
-    font-size: 0.85em;
+    font-size: 0.75em;
     text-transform: uppercase;
     letter-spacing: 1px;
-    color: var(--text-muted);
+    color: #4b5563;
 }
 
 .btn-back-dash {
-    background-color: var(--bg-hover);
-    color: var(--text-secondary);
-    border: 1px solid var(--border-color);
+    background-color: #1f2937;
+    color: #d1d5db;
+    border: 1px solid #374151;
+    padding: 4px 8px;
     border-radius: 6px;
-    padding: 4px 10px;
-    font-size: 0.8em;
+    font-size: 0.75em;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: background-color 0.2s ease;
 }
 
 .btn-back-dash:hover {
-    background-color: var(--border-color);
-    color: var(--text-primary);
+    background-color: #374151;
 }
 
 .songs-list {
@@ -427,27 +376,25 @@ h1, h2, h3, h4 {
 }
 
 .song-item {
-    padding: 12px 14px;
-    background-color: var(--bg-card);
+    padding: 10px 12px;
+    background-color: #111827;
     border-radius: 8px;
-    margin-bottom: 8px;
+    margin-bottom: 6px;
     cursor: pointer;
     transition: all 0.2s ease;
-    font-size: 0.9em;
-    color: var(--text-secondary);
-    border: 1px solid var(--border-color);
+    font-size: 0.85em;
+    color: #9ca3af;
 }
 
 .song-item:hover {
-    background-color: var(--bg-hover);
-    color: var(--text-primary);
+    background-color: #1f2937;
+    color: #f3f4f6;
     transform: translateX(2px);
 }
 
 .song-item.active {
-    background-color: var(--accent-purple);
+    background-color: #8b5cf6;
     color: #fff;
-    border-color: var(--accent-purple);
 }
 
 /* ==========================================================================
@@ -456,180 +403,322 @@ h1, h2, h3, h4 {
 .workspace-container {
     flex-grow: 1;
     height: 100%;
-    overflow-y: auto;
-    background-color: var(--bg-main);
     display: flex;
-    flex-direction: column;
+    overflow: hidden;
 }
 
 .workspace-wrapper {
     flex-grow: 1;
-    width: 100%;
-    max-width: 900px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    overflow-y: auto;
+}
+
+.band-dashboard {
+    flex-grow: 1;
     padding: 30px;
-    margin: 0 auto;
+    overflow-y: auto;
     display: flex;
     flex-direction: column;
     gap: 20px;
 }
 
-.player-status-card {
-    background-color: var(--bg-card);
-    border-radius: 12px;
-    border: 1px solid var(--border-color);
-    padding: 20px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-}
-
-.status-label {
-    background-color: var(--bg-input);
-    border-left: 4px solid var(--accent-purple);
-    padding: 12px 16px;
-    border-radius: 6px;
-    font-size: 0.9em;
-    color: var(--text-secondary);
-    margin-bottom: 20px;
-    border: 1px solid var(--border-color);
-    border-left-width: 4px;
-}
-
-.master-controls {
+.band-dashboard-header {
     display: flex;
-    flex-wrap: wrap;
+    justify-content: space-between;
     align-items: center;
-    gap: 15px;
+    border-bottom: 1px solid #1f2937;
+    padding-bottom: 15px;
 }
 
-.controls-buttons-group {
-    display: flex;
-    gap: 10px;
-}
-
-/* Svi dugmići */
-button {
-    background-color: var(--accent-purple);
+.btn-new-band-large {
+    background-color: #8b5cf6;
     color: #fff;
     border: none;
-    border-radius: 8px;
-    padding: 10px 18px;
-    font-size: 0.95em;
+    border-radius: 6px;
+    padding: 8px 16px;
+    font-size: 0.85em;
     cursor: pointer;
-    transition: all 0.2s ease;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
+    transition: background-color 0.2s ease;
 }
 
-button:hover:not(:disabled) {
-    background-color: var(--accent-purple-hover);
-}
-
-button:disabled {
-    opacity: 0.25;
-    cursor: not-allowed;
-}
-
-button.btn-stop {
-    background-color: var(--accent-red);
-}
-
-button.btn-stop:hover:not(:disabled) {
-    background-color: var(--accent-red-hover);
-}
-
-button.btn-secondary {
-    background-color: var(--bg-hover);
-    color: var(--text-secondary);
-    border: 1px solid var(--border-color);
-}
-
-button.btn-secondary:hover:not(:disabled) {
-    background-color: var(--border-color);
-    color: var(--text-primary);
-}
-
-/* Master jačina */
-.volume-container {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    background-color: var(--bg-input);
-    padding: 8px 15px;
-    border-radius: 8px;
-    border: 1px solid var(--border-color);
-    flex-grow: 1;
-    justify-content: flex-end;
-}
-
-.vol-slider {
-    -webkit-appearance: none;
-    width: 120px;
-    height: 4px;
-    background: var(--border-color);
-    border-radius: 2px;
-    outline: none;
-    cursor: pointer;
-}
-
-.vol-slider::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    width: 12px;
-    height: 12px;
-    background: var(--accent-purple);
-    border-radius: 50%;
-    cursor: pointer;
+.btn-new-band-large:hover {
+    background-color: #7c3aed;
 }
 
 /* ==========================================================================
-   MIKSETA (HORIZONTAL TRACK STRIPS STACKED VERTICALLY - v1.3.7 STYLE)
+   BANDS VIEW (Kartice po uzoru na giglist.no)
+   ========================================================================== */
+.band-card {
+    background-color: #111827;
+    border-radius: 12px;
+    border: 1px solid #1f2937;
+    display: flex;
+    overflow: hidden;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+}
+
+.band-card-logo-box {
+    width: 140px;
+    background-color: #0b0f19;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-right: 1px solid #1f2937;
+    padding: 15px;
+    color: #4b5563;
+    cursor: pointer;
+    position: relative;
+    text-align: center;
+}
+
+.band-card-logo-box:hover {
+    background-color: #111827;
+}
+
+.band-logo-img {
+    width: 80px;
+    height: 80px;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 1px solid #1f2937;
+}
+
+.band-logo-icon {
+    font-size: 2em;
+    margin-bottom: 5px;
+}
+
+.band-logo-text {
+    font-size: 0.72em;
+    color: #6b7280;
+    margin-top: 5px;
+}
+
+.band-card-content {
+    flex-grow: 1;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.band-card-name {
+    font-size: 1.3em;
+    color: #f8fafc;
+}
+
+.band-badge-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.badge-owner {
+    background-color: rgba(234, 179, 8, 0.1);
+    color: #eab308;
+    border: 1px solid #eab308;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.65em;
+    font-weight: bold;
+}
+
+.badge-member {
+    background-color: rgba(156, 163, 175, 0.1);
+    color: #9ca3af;
+    border: 1px solid #9ca3af;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.65em;
+    font-weight: bold;
+}
+
+.band-card-owner-name {
+    font-size: 0.8em;
+    color: #6b7280;
+}
+
+.band-actions-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.band-action-btn {
+    background-color: #1f2937;
+    color: #f3f4f6;
+    border: none;
+    border-radius: 6px;
+    padding: 8px;
+    font-size: 0.8em;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.band-action-btn:hover {
+    background-color: #374151;
+    color: #8b5cf6;
+}
+
+.action-icon {
+    font-size: 1.1em;
+}
+
+/* ==========================================================================
+   PANEL ZA UPRAVLJANJE BENDOM (Novi bend, Podešavanja, Članovi)
+   ========================================================================== */
+.band-admin-section {
+    background-color: #111827;
+    border-radius: 12px;
+    padding: 20px;
+    border: 1px solid #1f2937;
+    margin-top: 15px;
+}
+
+.band-admin-title {
+    font-size: 1.05em;
+    color: #8b5cf6;
+    border-bottom: 1px solid #1f2937;
+    padding-bottom: 8px;
+    margin-bottom: 15px;
+}
+
+.input-grid-double {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+}
+
+@media (max-width: 600px) {
+    .input-grid-double {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+}
+
+.input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.input-label {
+    font-size: 0.78em;
+    color: #6b7280;
+}
+
+.settings-input {
+    width: 100%;
+    padding: 8px 10px;
+    background-color: #0b0f19;
+    border: 1px solid #1f2937;
+    border-radius: 6px;
+    color: #f8fafc;
+    outline: none;
+    font-size: 0.9em;
+}
+
+.settings-input:focus {
+    border-color: #8b5cf6;
+}
+
+.btn-connect {
+    background-color: #8b5cf6;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 15px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 0.88em;
+}
+
+.btn-connect:hover {
+    background-color: #7c3aed;
+}
+
+.btn-secondary {
+    background-color: #1f2937;
+    color: #f3f4f6;
+    border: 1px solid #374151;
+    border-radius: 6px;
+    padding: 8px 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-secondary:hover {
+    background-color: #374151;
+}
+
+.btn-stop {
+    background-color: #ef4444;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-stop:hover {
+    background-color: #dc2626;
+}
+
+/* ==========================================================================
+   COMPACT MIKSETA (HORIZONTAL STRIPS - v1.3.7 STIL)
    ========================================================================== */
 .mixer {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 6px;
     width: 100%;
+    margin-top: 10px;
 }
 
 .track-strip {
     display: flex;
     align-items: center;
-    background-color: var(--bg-card);
-    border-radius: 10px;
-    padding: 12px 18px;
+    background-color: #111827;
+    border-radius: 8px;
+    padding: 10px 15px;
     gap: 15px;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.15);
-    transition: transform 0.15s ease, box-shadow 0.15s ease;
-    border: 1px solid var(--border-color);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    border: 1px solid #1f2937;
+    user-select: none;
 }
 
 .track-strip.dragging {
     opacity: 0.4;
-    background-color: var(--bg-hover);
-    box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-    transform: scale(0.99);
+    background-color: #1f2937;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.4);
 }
 
 .drag-handle {
     cursor: grab;
-    font-size: 1.2em;
-    color: var(--text-muted);
+    font-size: 1.1em;
+    color: #4b5563;
     user-select: none;
-    padding: 0 5px;
-}
-
-.drag-handle:active {
-    cursor: grabbing;
+    padding: 0 3px;
 }
 
 .track-name {
-    width: 160px;
-    font-size: 0.95em;
-    color: var(--text-primary);
+    width: 140px;
+    font-size: 0.9em;
+    color: #d1d5db;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    font-weight: 400;
 }
 
 .volume-slider-container {
@@ -638,250 +727,108 @@ button.btn-secondary:hover:not(:disabled) {
     align-items: center;
 }
 
-.track-volume-slider {
+.volume-slider {
     -webkit-appearance: none;
     width: 100%;
-    height: 6px;
-    background: var(--bg-input);
-    border: 1px solid var(--border-color);
-    border-radius: 3px;
+    height: 4px;
+    background: #1f2937;
+    border-radius: 2px;
     outline: none;
     cursor: pointer;
 }
 
-.track-volume-slider::-webkit-slider-thumb {
+.volume-slider::-webkit-slider-thumb {
     -webkit-appearance: none;
-    width: 14px;
-    height: 14px;
-    background: var(--accent-green);
+    width: 12px;
+    height: 12px;
+    background: #10b981;
     border-radius: 50%;
     cursor: pointer;
-    transition: transform 0.1s ease;
-}
-
-.track-volume-slider::-webkit-slider-thumb:hover {
-    transform: scale(1.2);
 }
 
 .btn-mute, .btn-solo {
-    background-color: var(--bg-input);
-    color: var(--text-secondary);
-    border: 1px solid var(--border-color);
+    background-color: #1f2937;
+    color: #9ca3af;
+    border: none;
     border-radius: 6px;
     cursor: pointer;
-    font-size: 0.8em;
-    padding: 8px 14px;
-    min-width: 65px;
+    font-size: 0.78em;
+    padding: 6px 12px;
     transition: all 0.2s ease;
-    font-weight: 400;
 }
 
 .btn-mute.active {
-    background-color: var(--accent-red);
+    background-color: #ef4444;
     color: #fff;
-    border-color: var(--accent-red);
 }
 
 .btn-solo.active {
-    background-color: var(--accent-gold);
+    background-color: #eab308;
     color: #111827;
-    border-color: var(--accent-gold);
 }
 
 /* ==========================================================================
-   BANDS VIEW (Dashboard - Giglist.no stil)
+   PLAYER STATUS CARD
    ========================================================================== */
-.band-dashboard {
-    flex-grow: 1;
-    display: flex;
-    flex-direction: column;
-    padding: 30px;
-}
-
-.band-dashboard-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-bottom: 1px solid var(--border-color);
-    padding-bottom: 20px;
-    margin-bottom: 25px;
-}
-
-.btn-new-band-large {
-    background-color: var(--bg-hover);
-    color: var(--text-secondary);
-    border: 1px solid var(--border-color);
-    font-size: 0.9em;
-}
-
-.btn-new-band-large:hover {
-    background-color: var(--border-color);
-    color: var(--text-primary);
-}
-
-.band-card {
-    background-color: var(--bg-card);
+.player-status-card {
+    background-color: #111827;
+    border: 1px solid #1f2937;
     border-radius: 12px;
-    border: 1px solid var(--border-color);
+    padding: 15px 20px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.status-label {
+    font-size: 0.85em;
+    color: #9ca3af;
+    margin-bottom: 12px;
+    border-left: 3px solid #8b5cf6;
+    padding-left: 10px;
+}
+
+.master-controls {
     display: flex;
-    overflow: hidden;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.3);
-    width: 100%;
-    max-width: 800px;
-}
-
-.band-card-logo-box {
-    width: 160px;
-    background-color: var(--bg-input);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    border-right: 1px solid var(--border-color);
-    padding: 20px;
-    color: var(--text-muted);
-    cursor: pointer;
-    transition: background-color 0.2s ease;
-}
-
-.band-card-logo-box:hover {
-    background-color: var(--bg-hover);
-    color: var(--text-secondary);
-}
-
-.band-logo-icon {
-    font-size: 2.2em;
-    margin-bottom: 8px;
-}
-
-.band-logo-text {
-    font-size: 0.8em;
-}
-
-.band-logo-img {
-    width: 100%;
-    height: 120px;
-    object-fit: cover;
-    border-radius: 6px;
-}
-
-.band-card-content {
-    flex-grow: 1;
-    padding: 25px;
-    display: flex;
-    flex-direction: column;
     justify-content: space-between;
-}
-
-.band-card-name {
-    font-size: 1.4em;
-    color: var(--text-primary);
-    font-weight: 400;
-}
-
-.band-badge-row {
-    display: flex;
     align-items: center;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.controls-buttons-group {
+    display: flex;
     gap: 10px;
 }
 
-.badge-owner {
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: 0.7em;
-    font-weight: bold;
-    background-color: rgba(234, 179, 8, 0.1);
-    color: var(--accent-gold);
-    border: 1px solid var(--accent-gold);
-}
-
-.badge-member {
-    padding: 4px 8px;
-    border-radius: 4px;
-    font-size: 0.7em;
-    font-weight: bold;
-    background-color: rgba(156, 163, 175, 0.1);
-    color: var(--text-secondary);
-    border: 1px solid var(--text-secondary);
-}
-
-.band-card-owner-name {
-    font-size: 0.85em;
-    color: var(--text-secondary);
-}
-
-.band-actions-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-    gap: 15px;
-    margin-top: 25px;
-}
-
-.band-action-btn {
-    background-color: var(--bg-input);
-    color: var(--text-secondary);
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    padding: 12px;
-    font-size: 0.9em;
-    cursor: pointer;
-    transition: all 0.2s ease;
+.volume-container {
     display: flex;
-    flex-direction: column;
     align-items: center;
-    justify-content: center;
-    gap: 8px;
+    gap: 10px;
+    background-color: #0b0f19;
+    padding: 6px 12px;
+    border-radius: 8px;
+    border: 1px solid #1f2937;
 }
 
-.band-action-btn:hover {
-    background-color: var(--bg-hover);
-    color: var(--accent-purple);
-    border-color: var(--accent-purple);
-    transform: translateY(-2px);
+.vol-slider {
+    -webkit-appearance: none;
+    width: 120px;
+    height: 4px;
+    background: #1f2937;
+    border-radius: 2px;
+    outline: none;
 }
 
-.action-icon {
-    font-size: 1.5em;
-}
-
-/* ==========================================================================
-   DYN SECTIONS FOR MEMB / SETTINGS / ADD
-   ========================================================================== */
-.band-admin-section {
-    background-color: var(--bg-card);
-    border-radius: 12px;
-    border: 1px solid var(--border-color);
-    padding: 25px;
-    margin-top: 25px;
-    max-width: 800px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-}
-
-.band-admin-title {
-    font-size: 1.1em;
-    color: var(--accent-purple);
-    border-bottom: 1px solid var(--border-color);
-    padding-bottom: 8px;
-    margin-bottom: 20px;
-    font-weight: 400;
-}
-
-/* Forme i unosi */
-.input-grid-double {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 15px;
-    margin-bottom: 15px;
-}
-
-@media (max-width: 600px) {
-    .input-grid-double {
-        grid-template-columns: 1fr;
-    }
+.vol-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 10px;
+    height: 10px;
+    background: #8b5cf6;
+    border-radius: 50%;
+    cursor: pointer;
 }
 
 /* ==========================================================================
-   MODAL DIALOGS (Podešavanja & Podrška)
+   PODEŠAVANJA MODAL
    ========================================================================== */
 .modal-overlay {
     position: fixed;
@@ -897,55 +844,56 @@ button.btn-secondary:hover:not(:disabled) {
 }
 
 .modal-content {
-    background-color: var(--bg-card);
-    border: 1px solid var(--border-color);
+    background-color: #111827;
+    border: 1px solid #1f2937;
     border-radius: 12px;
+    padding: 20px;
     width: 100%;
-    max-width: 550px;
+    max-width: 500px;
     box-shadow: 0 10px 25px rgba(0,0,0,0.5);
     display: flex;
     flex-direction: column;
-    overflow: hidden;
+    gap: 15px;
 }
 
 .modal-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-bottom: 1px solid var(--border-color);
-    padding: 15px 20px;
+    border-bottom: 1px solid #1f2937;
+    padding-bottom: 10px;
 }
 
 .modal-title {
-    font-size: 1.15em; /* Smanjeno na gospodski i umeren ton */
-    font-weight: 400;
-    color: var(--text-primary);
+    font-size: 1.15em;
+    font-weight: 300;
+    color: #8b5cf6;
 }
 
 .modal-close-btn {
     font-size: 1.5em;
     cursor: pointer;
-    color: var(--text-muted);
+    color: #6b7280;
     background: transparent;
     border: none;
+    outline: none;
 }
 
 .modal-close-btn:hover {
-    color: var(--text-primary);
+    color: #fff;
 }
 
 .modal-tabs {
     display: flex;
-    background-color: var(--bg-input);
-    border-bottom: 1px solid var(--border-color);
-    padding: 0 10px;
+    border-bottom: 1px solid #1f2937;
+    gap: 5px;
 }
 
 .modal-tab {
-    padding: 12px 16px;
+    padding: 8px 12px;
     background: transparent;
     border: none;
-    color: var(--text-secondary);
+    color: #6b7280;
     cursor: pointer;
     font-size: 0.85em;
     border-bottom: 2px solid transparent;
@@ -953,187 +901,194 @@ button.btn-secondary:hover:not(:disabled) {
 }
 
 .modal-tab:hover {
-    color: var(--text-primary);
+    color: #d1d5db;
 }
 
 .modal-tab.active {
-    color: var(--accent-purple);
-    border-bottom-color: var(--accent-purple);
-    font-weight: 400;
+    color: #8b5cf6;
+    border-bottom-color: #8b5cf6;
 }
 
 .modal-body {
-    padding: 20px;
-    max-height: 60vh;
+    max-height: 350px;
     overflow-y: auto;
+    padding: 5px 0;
 }
 
 .modal-footer {
     display: flex;
     justify-content: flex-end;
-    gap: 12px;
-    padding: 15px 20px;
-    border-top: 1px solid var(--border-color);
-    background-color: var(--bg-input);
+    gap: 10px;
+    border-top: 1px solid #1f2937;
+    padding-top: 10px;
 }
 
 /* ==========================================================================
-   AUTENTIFIKACIJA & SR/EN PILULE
+   AUTENTIFIKACIJA PANELS
    ========================================================================== */
 .auth-wrapper {
     width: 100%;
-    max-width: 420px;
-    background-color: var(--bg-card);
+    max-width: 400px;
+    background-color: #111827;
     padding: 30px;
     border-radius: 12px;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-    margin: 60px auto;
-    border: 1px solid var(--border-color);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+    margin: 80px auto;
+    border: 1px solid #1f2937;
 }
 
-/* SR EN Dugmići u obliku tamnih zaobljenih pilula */
 .lang-switch-container {
     display: flex;
-    justify-content: center;
+    justify-content: flex-end;
     gap: 8px;
-    margin-bottom: 20px;
+    margin-bottom: 15px;
 }
 
 .btn-lang {
-    background-color: var(--bg-input);
-    color: var(--text-secondary);
-    border: 1px solid var(--border-color);
-    padding: 6px 14px;
-    font-size: 0.8em;
-    border-radius: 20px; /* Okrugla pilula */
+    background-color: #1f2937;
+    color: #9ca3af;
+    border: 1px solid #374151;
+    border-radius: 15px;
+    padding: 3px 10px;
+    font-size: 0.72em;
     cursor: pointer;
     transition: all 0.2s ease;
-    font-weight: 400;
-    min-width: 50px;
 }
 
-.btn-lang:hover {
-    color: var(--text-primary);
-    background-color: var(--bg-hover);
-}
-
-.btn-lang.active {
-    background-color: var(--accent-purple);
+.btn-lang.active, .btn-lang:hover {
+    background-color: #8b5cf6;
     color: #fff;
-    border-color: var(--accent-purple);
+    border-color: #8b5cf6;
 }
 
 .auth-title {
-    font-size: 1.25em;
+    font-size: 1.3em;
     text-align: center;
-    margin-bottom: 25px;
-    color: var(--accent-purple);
+    margin-bottom: 20px;
+    color: #8b5cf6;
 }
 
 .auth-switch-link {
     text-align: center;
-    font-size: 0.85em;
-    color: var(--accent-purple);
+    font-size: 0.8em;
+    color: #8b5cf6;
     cursor: pointer;
-    margin-top: 20px;
+    margin-top: 15px;
     text-decoration: underline;
 }
 
 /* ==========================================================================
-   RESPONSIVE DESIGN (MOBILNI TELEFONI)
+   RESPONSIVE DESIGN (MOBILNI PREKLAPAJUĆI KORACI)
    ========================================================================== */
+.sidebar-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 150;
+}
+
 .mobile-toggle-btn {
     display: none;
 }
 
+#mobileBackToSongsBtn {
+    display: none;
+}
+
 @media (max-width: 768px) {
-    /* Mobilni sidebar */
     .sidebar {
         position: fixed;
         left: 0;
         top: 0;
         bottom: 0;
         transform: translateX(-100%);
-        z-index: 250;
-        box-shadow: 5px 0 25px rgba(0,0,0,0.6);
-        width: 260px;
+        z-index: 200;
+        box-shadow: 5px 0 25px rgba(0,0,0,0.5);
     }
 
     .sidebar.open {
         transform: translateX(0);
     }
 
-    .sidebar-overlay {
-        display: none;
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: rgba(0, 0, 0, 0.7);
-        z-index: 200;
-    }
-
     .sidebar-overlay.open {
         display: block;
     }
 
-    /* Hamburger dugme na Dashboard-u i Plejeru */
     .mobile-toggle-btn {
-        display: inline-flex;
-        background-color: var(--bg-card);
-        border: 1px solid var(--border-color);
-        color: var(--text-primary);
+        display: inline-block;
+        background-color: #1f2937;
+        border: 1px solid #374151;
+        color: #f3f4f6;
         border-radius: 6px;
-        width: 40px;
-        height: 40px;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.3em;
+        padding: 6px 12px;
+        font-size: 0.8em;
         cursor: pointer;
     }
 
-    /* MOBILNI REPERTOAR I PLEJER ACCORDION (ELEGANTNI SINGLE PANEL) */
     .stems-player-container-responsive {
         display: flex;
         flex-direction: column;
         width: 100%;
         height: 100%;
     }
-
-    .repertoire-column {
+    
+    /* Default state: show repertoire, hide mixer */
+    .stems-player-container-responsive #repertoireColumn {
+        display: flex !important;
         width: 100% !important;
-        border-right: none;
+        height: 100% !important;
     }
-
-    /* Kada je učitana pesma, sakrivamo spisak pesama a pokazujemo miksetu! */
-    .stems-player-container-responsive.song-loaded .repertoire-column {
+    .stems-player-container-responsive .workspace-wrapper {
         display: none !important;
     }
-
+    
+    /* When song is loaded: hide repertoire, show mixer */
+    .stems-player-container-responsive.song-loaded #repertoireColumn {
+        display: none !important;
+    }
     .stems-player-container-responsive.song-loaded .workspace-wrapper {
         display: flex !important;
-        width: 100%;
-        padding: 15px;
+        width: 100% !important;
+        height: 100% !important;
     }
-
-    .workspace-wrapper {
-        padding: 15px;
+    
+    #mobileBackToSongsBtn {
+        display: inline-block !important;
     }
 
     .track-strip {
-        padding: 10px 12px;
-        gap: 10px;
+        padding: 8px 10px;
+        gap: 8px;
     }
 
     .track-name {
-        width: 100px;
-        font-size: 0.85em;
+        width: 90px;
+        font-size: 0.78em;
     }
 
     .btn-mute, .btn-solo {
-        padding: 6px 10px;
-        font-size: 0.75em;
-        min-width: 50px;
+        padding: 6px 8px;
+        font-size: 0.72em;
+    }
+}
+
+@media (min-width: 769px) {
+    .stems-player-container-responsive {
+        display: flex !important;
+        flex-direction: row !important;
+        width: 100%;
+        height: 100%;
+    }
+    .stems-player-container-responsive #repertoireColumn {
+        display: flex !important;
+        width: 280px !important;
+    }
+    .stems-player-container-responsive .workspace-wrapper {
+        display: flex !important;
+        flex-grow: 1 !important;
     }
 }
