@@ -1,5 +1,5 @@
 // ==========================================================================
-// GIGSTEMS WEB APP - CORE JAVASCRIPT LOGIC (VERZIJA 1.4.06)
+// GIGSTEMS WEB APP - CORE JAVASCRIPT LOGIC (VERZIJA 1.4.07)
 // ==========================================================================
 
 // Supabase konfiguracija baze podataka
