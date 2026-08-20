@@ -3,110 +3,105 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GigLab v1.4.07</title>
+    <title>GigLab v1.4.08</title>
+    <!-- Poziv eksternog CSS-a -->
     <link rel="stylesheet" href="style.css">
+    <!-- Eksterni fajl sa prevodima -->
     <script src="translations.js"></script>
+    <!-- Učitavanje zvaničnog Supabase SDK sa CDN mreže -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Glavni JavaScript kod aplikacije -->
+    <script src="app.js" defer></script>
 </head>
 <body>
 
-    <!-- Mobilno zaglavlje sa hamburgerom -->
-    <div class="mobile-header-bar">
-        <button class="mobile-hamburger" onclick="toggleMobileSidebar()">☰</button>
-        <span style="font-weight: 400; color: var(--primary-color);">GigLab</span>
-        <div style="width: 24px;"></div>
-    </div>
-
-    <!-- Zatamnjenje za mobilni klizni meni -->
+    <!-- Zatamnjenje ekrana za mobilni kada je otvoren klizni meni sa navigacijom -->
     <div id="sidebarOverlay" class="sidebar-overlay" onclick="closeAllMobilePanels()"></div>
 
-    <!-- EKRAN ZA AUTENTIFIKACIJU (Učitava se kad korisnik nije prijavljen) -->
+    <!-- EKRAN ZA AUTENTIFIKACIJU (Prikazuje se kada korisnik nije ulogovan) -->
     <div id="authContainer" class="auth-wrapper" style="display: none;">
-        <!-- Dvojezična dugmad -->
-        <div class="lang-switcher-container">
-            <button class="lang-btn active" onclick="setLanguage('sr')">SR</button>
-            <button class="lang-btn" onclick="setLanguage('en')">EN</button>
+        <!-- Dvojezični switch na vrhu -->
+        <div class="lang-switch-container">
+            <button id="btnLangSR" class="btn-lang active" onclick="setLanguage('sr')">SR</button>
+            <button id="btnLangEN" class="btn-lang" onclick="setLanguage('en')">EN</button>
         </div>
 
         <h2 id="authTitle" class="auth-title">🔑 Prijavljivanje</h2>
         
-        <!-- Standardni login/register ekran -->
-        <div id="authFieldsGroup">
-            <div id="authDisplayNameGroup" class="input-group" style="display: none;">
+        <!-- Standardna registraciona i login polja -->
+        <div id="authFormFields">
+            <div id="authDisplayNameGroup" class="input-group" style="display: none; margin-bottom: 12px;">
                 <label id="authDisplayNameLabel" class="input-label" for="authDisplayNameInput">Tvoje ime (muzičar):</label>
-                <input type="text" id="authDisplayNameInput" class="settings-input" placeholder="Npr. Marko Basista">
+                <input type="text" id="authDisplayNameInput" class="settings-input" placeholder="Npr. Marko Marković">
             </div>
 
-            <div class="input-group">
+            <div class="input-group" style="margin-bottom: 12px;">
                 <label id="authEmailLabel" class="input-label" for="authEmailInput">Email adresa:</label>
-                <input type="email" id="authEmailInput" class="settings-input" placeholder="ime@gmail.com">
+                <input type="email" id="authEmailInput" class="settings-input" placeholder="singer@yourband.com">
             </div>
 
             <div class="input-group" style="margin-bottom: 20px;">
                 <label id="authPasswordLabel" class="input-label" for="authPasswordInput">Lozinka:</label>
                 <input type="password" id="authPasswordInput" class="settings-input" placeholder="Najmanje 6 karaktera">
             </div>
+
+            <button id="authSubmitBtn" class="btn-connect" style="width: 100%;" onclick="handleAuthSubmit()">Prijavi se</button>
+            <div id="authSwitchLink" class="auth-switch-link" onclick="toggleAuthMode()">Nemate nalog? Registrujte se</div>
         </div>
 
-        <!-- Ekran za potvrdu OTP koda (unutar istog prozora!) -->
-        <div id="authOtpGroup" style="display: none; margin-bottom: 20px;">
-            <p id="otpText" style="font-size: 0.9em; color: var(--text-muted); text-align: center; margin-bottom: 15px;"></p>
-            <input type="hidden" id="otpEmailInput">
-            <div class="input-group">
-                <input type="text" id="otpTokenInput" class="settings-input" placeholder="6-cifreni kod" style="text-align: center; font-size: 1.2em; letter-spacing: 4px;">
+        <!-- Integrisani OTP ekran za potvrdu emaila u istom prozoru -->
+        <div id="otpFormFields" style="display: none;">
+            <p id="otpSubText" class="input-label" style="margin-bottom: 15px; line-height: 1.4; color: var(--text-primary);">
+                📩 Potvrda Email adrese:<br>Poslat vam je 6-cifreni kod na e-mail. Unesite ga ispod da završite registraciju:
+            </p>
+            <div class="input-group" style="margin-bottom: 20px;">
+                <input type="text" id="otpCodeInput" class="settings-input" placeholder="Npr. 123456" style="text-align: center; letter-spacing: 4px; font-weight: bold; font-size: 1.3em;">
             </div>
-            <button class="btn-connect" style="width: 100%; margin-top: 15px;" onclick="handleOtpSubmit()">Potvrdi nalog</button>
-            <div class="auth-switch-link" onclick="backToRegister()" style="margin-top: 15px; text-decoration: underline;" id="otpBackBtn">◀ Nazad na registraciju</div>
+            <button id="otpVerifyBtn" class="btn-connect" style="width: 100%; margin-bottom: 15px;" onclick="handleOTPVerify()">Potvrdi kod</button>
+            <button id="otpCancelBtn" class="btn-secondary" style="width: 100%;" onclick="cancelOTPMode()">◀ Nazad na prijavu</button>
         </div>
-
-        <button id="authSubmitBtn" class="btn-connect" style="width: 100%;" onclick="handleAuthSubmit()">Prijavi se</button>
-        <div id="authSwitchLink" class="auth-switch-link" onclick="toggleAuthMode()">Nemate nalog? Registrujte se</div>
     </div>
 
-    <!-- GLAVNI KORISNIČKI TROKOLONALNI KONTEJNER -->
+    <!-- TROSLOJNI GLAVNI KONTEJNER (Prikazuje se samo ulogovanim korisnicima) -->
     <div id="appContainer" class="app-container" style="display: none;">
 
-        <!-- KOLONA 1: Sidebar (Meni, Bendovi, Profil) -->
+        <!-- ==========================================================================
+             KOLONA 1: Glavni Sidebar (Navigacija, Bendovi, Profil, Futer)
+             ========================================================================== -->
         <div id="appSidebar" class="sidebar">
             <div class="sidebar-header">
-                <!-- Dvojezična dugmad u glavnom interfejsu (Uvek vidljiva i dostupna!) -->
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                    <span class="sidebar-logo">GigLab</span>
-                    <div style="display: flex; gap: 4px;">
-                        <button class="lang-btn active" style="padding: 2px 8px; font-size: 0.75em;" onclick="setLanguage('sr')">SR</button>
-                        <button class="lang-btn" style="padding: 2px 8px; font-size: 0.75em;" onclick="setLanguage('en')">EN</button>
-                    </div>
+                <span class="sidebar-logo">GigLab</span>
+                <p id="subtitleText" class="subtitle">v1.4.08</p>
+                <div class="sidebar-divider" style="margin: 10px 0 15px 0;"></div>
+                
+                <!-- Diskretan dvojezični prebacivač i u aplikaciji -->
+                <div class="lang-switch-container" style="justify-content: flex-start; margin-bottom: 0;">
+                    <button id="sidebarLangSR" class="btn-lang" onclick="setLanguage('sr')">SR</button>
+                    <button id="sidebarLangEN" class="btn-lang" onclick="setLanguage('en')">EN</button>
                 </div>
-                <p id="subtitleText" class="subtitle">v1.4.07</p>
-                <div class="sidebar-divider"></div>
             </div>
 
             <!-- Lista bendova sa podmenijem -->
             <div class="nav-menu">
-                <div class="sidebar-section-title-container">
-                    <div id="sidebarBandsHeader" class="sidebar-section-title">🎸 Moji Bendovi</div>
-                    <button class="btn-add-plus" onclick="toggleAddOptions()">+</button>
+                <div class="sidebar-section-title-row">
+                    <span id="sidebarBandsHeader" class="sidebar-section-title">🎸 Moji Bendovi</span>
+                    <!-- Suptilno "+" dugme u samom zaglavlju sekcije bendova -->
+                    <button id="btnNewBandSidebar" class="btn-sidebar-add-plus" onclick="showNewBandCreation()" title="Osnuj novi bend">➕</button>
                 </div>
                 
-                <!-- Opcije koje se otvaraju klikom na plus -->
-                <div id="addBandOptionsContainer" class="add-band-options" style="display: none;">
-                    <button class="add-opt-item" onclick="triggerAddBand()">➕ Novi bend</button>
-                    <button class="add-opt-item" onclick="triggerJoinBand()">🔑 Pridruži se bendu</button>
-                </div>
-
                 <div id="sidebarBandsList" class="sidebar-bands-list">
                     <!-- Popunjava se dinamički iz baze -->
                 </div>
             </div>
 
-            <!-- Profil i gospodski brendirani futer -->
+            <!-- Profil korisnika na dnu Sidebara -->
             <div class="sidebar-footer">
                 <div class="sidebar-divider" style="margin: 0 0 10px 0;"></div>
                 
+                <!-- Popup meni koji iskače iznad profila -->
                 <div id="profilePopupMenu" class="profile-popup-menu" style="display: none;">
-                    <button class="popup-item" onclick="openSettingsModal()">⚙️ Podešavanja</button>
-                    <button class="popup-item" onclick="openSupportModal()">💬 Prijavi problem</button>
-                    <button class="popup-item btn-popup-logout" onclick="handleLogout()">🚪 Odjavi se</button>
+                    <button id="popMenuSettings" class="popup-item" onclick="openSettingsModal()">⚙️ Podešavanja</button>
+                    <button id="popMenuLogout" class="popup-item btn-popup-logout" onclick="handleLogout()">🚪 Odjavi se</button>
                 </div>
 
                 <div class="user-profile-trigger" onclick="toggleProfileMenu(event)">
@@ -116,239 +111,292 @@
                     </div>
                     <span class="caret-icon">▲</span>
                 </div>
-
-                <p class="footer-text">© GigLab.app</p>
+                
+                <!-- Futer ispod profila, u stilu giglist / gigreka -->
+                <div class="sidebar-app-footer">
+                    <div class="support-link" onclick="toggleSupportModal()">💬 Prijavi problem</div>
+                    <div>© GigLab.app</div>
+                </div>
             </div>
         </div>
 
-        <!-- KOLONA 2: Repertoar / Spisak pesama (Samo za tab 'songs') -->
-        <div id="repertoireColumn" class="repertoire-column" style="display: none;">
-            <div class="search-container">
-                <input type="text" id="searchInput" class="search-input" placeholder="🔍 Pretraži pesmu..." oninput="filterSongs(this.value)">
-            </div>
-            <div class="songs-title-container">
-                <span id="songsTitle" class="songs-title">📋 Spisak Pesama</span>
-            </div>
-            <div id="songsList" class="songs-list">
-                <!-- Dinamički iz Google Drive -->
-            </div>
-        </div>
-
-        <!-- KOLONA 3: Glavna Radna Površina -->
-        <div class="workspace-wrapper">
+        <!-- ==========================================================================
+             SREDIŠNJA RADNA POVRŠINA (WORKSPACE CANVAS)
+             ========================================================================== -->
+        <div id="workspace" class="workspace-container">
             
-            <!-- Tab: Dashboard / Početni ekran aktivnog benda -->
-            <div id="tabDashboard" class="tab-content workspace-body" style="display: none;">
-                <div id="emptyDashboardContainer" style="text-align: center; margin-top: 80px; padding: 20px;">
-                    <span style="font-size: 3.5em;">🎸</span>
-                    <p id="emptyStateMsg" style="color: var(--text-muted); margin-top: 20px; font-size: 1.1em; line-height: 1.6; max-width: 450px; margin-left: auto; margin-right: auto;"></p>
+            <!-- VIEW A: Centralna Kontrolna Tabla Benda -->
+            <div id="bandDashboard" class="band-dashboard" style="display: flex; flex-direction: column;">
+                <div class="band-dashboard-header">
+                    <!-- Hamburger menu dugme za mobilne telefone -->
+                    <button class="mobile-toggle-btn" onclick="toggleMobileSidebar()">☰</button>
+                    <h2 id="bandDashboardMainTitle" style="font-weight: 400; font-size: 1.6em;">🎸 GigLab Dashboard</h2>
+                    <button id="btnNewBandDashboard" class="btn-new-band-large" onclick="showNewBandCreation()">➕ Novi bend</button>
+                </div>
+                
+                <!-- Glavna vizuelna kartica benda -->
+                <div id="bandCard" class="band-card" style="display: none;">
+                    <!-- Logo leve strane sa upload opcijom -->
+                    <div id="bandLogoBox" class="band-card-logo-box" onclick="triggerLogoUpload()">
+                        <div id="logoLoadingSpinner" style="display:none; color:var(--accent-purple);">⏳</div>
+                        <img id="bandLogoImg" class="band-logo-img" src="" style="display: none;" alt="Band Logo">
+                        <span id="bandLogoPlaceholderIcon" class="band-logo-icon">🖼️</span>
+                        <span id="bandLogoUploadText" class="band-logo-text">Upload logo</span>
+                        <!-- Skriveni fajl input za logo -->
+                        <input type="file" id="bandLogoFileInput" accept="image/*" style="display: none;" onchange="handleLogoUpload(this)">
+                    </div>
+                    
+                    <div class="band-card-content">
+                        <div>
+                            <h2 id="bandCardName" class="band-card-name">Ime Benda</h2>
+                            <!-- Uloga / Bedž statusa vlasništva -->
+                            <div class="band-badge-row" style="margin-top: 8px;">
+                                <span id="bandRoleBadge" class="badge-owner">OWNER</span>
+                                <span id="bandCardOwnerName" class="band-card-owner-name">Muzičar</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Grid akcionih tastera - Sadrži samo tri aktivna i ugrađena dugmeta -->
+                        <div class="band-actions-grid">
+                            <button id="btnSongsAction" class="band-action-btn" onclick="openSongsView()">
+                                <span class="action-icon">🎵</span>
+                                <span id="btnSongsText">Songs</span>
+                            </button>
+                            <button id="btnMembersAction" class="band-action-btn" onclick="toggleMembersSection()">
+                                <span class="action-icon">👤</span>
+                                <span>Members</span>
+                            </button>
+                            <button id="btnSettingsAction" class="band-action-btn" onclick="toggleBandSettingsSection()">
+                                <span class="action-icon">⚙️</span>
+                                <span>Settings</span>
+                            </button>
+                        </div>
+                    </div>
                 </div>
 
-                <div id="bandDashboardContainer" class="band-dashboard" style="display: none;">
-                    <div class="band-dashboard-header">
-                        <div class="band-dashboard-logo" id="dashboardLogoImg" onclick="document.getElementById('bandLogoFileInput').click()">
-                            <span style="font-size: 2.5em;">🎸</span><br>Upload Logo
+                <!-- Prazno stanje kada korisnik tek treba da izabere ili napravi bend -->
+                <div id="dashboardEmptyState" class="player-status-card" style="text-align: center; padding: 40px; margin-top: 20px;">
+                    <h3 id="emptyStateTitle" style="font-size: 1.3em; margin-bottom: 15px; font-weight: 400;">Dobrodošli u GigLab!</h3>
+                    <p id="emptyStateDesc" style="color: var(--text-secondary); margin-bottom: 25px; max-width: 500px; margin-left: auto; margin-right: auto;">
+                        Izaberite bend sa leve strane ili kliknite na "+" dugme u levom meniju da započnete rad sa stemsima!
+                    </p>
+                </div>
+
+                <!-- PANEL ZA UPRAVLJANJE BENDOM (Dynamic Sub-sections) -->
+                <div id="bandAdminSection" class="band-admin-section" style="display: none;">
+                    
+                    <!-- Formular za dodavanje i pravljenje novog benda -->
+                    <div id="newBandForm" style="display: none;">
+                        <h3 id="addSectionTitle" class="band-admin-title">➕ Osnuj Novi Bend</h3>
+                        <div class="input-group" style="margin-bottom: 12px;">
+                            <label id="bandNameLabel" class="input-label" for="newBandName">Naziv novog benda:</label>
+                            <input type="text" id="newBandName" class="settings-input" placeholder="Npr. Deep Purple">
                         </div>
-                        <input type="file" id="bandLogoFileInput" style="display: none;" accept="image/*" onchange="uploadBandLogo(event)">
+                        <div class="input-group" style="margin-bottom: 12px;">
+                            <label id="bandUrlLabel" class="input-label" for="newBandUrl">Google Drive Link Foldera:</label>
+                            <input type="text" id="newBandUrl" class="settings-input" placeholder="Nalepi link drajv foldera ovde">
+                        </div>
                         
-                        <div class="band-meta-info">
-                            <h2 id="dashboardBandName" style="font-size: 1.8em; font-weight: 400;">Naziv Benda</h2>
-                            <span id="dashboardBandRole" class="band-role-badge">ŠEF / ADMIN</span>
-                            <div style="font-size: 0.9em; color: var(--text-muted); margin-top: 4px;">
-                                <span id="bandCodeLabel">Pristupni kod:</span> <strong id="dashboardBandCode" style="color: var(--primary-color);">GL-XXXX</strong>
+                        <!-- Geografija za novi bend -->
+                        <div class="input-grid-double" style="margin-bottom: 12px;">
+                            <div class="input-group">
+                                <label class="input-label" for="newBandCountry">Država:</label>
+                                <select id="newBandCountry" class="settings-input" onchange="handleCountryChange(this, 'newBandCity', 'newBandCustomCountryInput', 'newBandCustomCityInput')">
+                                    <!-- Popunjava se iz JS-a -->
+                                </select>
+                                <input type="text" id="newBandCustomCountryInput" class="settings-input" style="display: none; margin-top: 5px;" placeholder="Unesi državu">
+                            </div>
+                            <div class="input-group">
+                                <label class="input-label" for="newBandCity">Grad:</label>
+                                <select id="newBandCity" class="settings-input" onchange="handleCityChange(this, 'newBandCustomCityInput')" disabled>
+                                    <option value="">-- Prvo izaberi državu --</option>
+                                </select>
+                                <input type="text" id="newBandCustomCityInput" class="settings-input" style="display: none; margin-top: 5px;" placeholder="Unesi grad">
+                            </div>
+                        </div>
+
+                        <!-- Kontakt podaci za novi bend -->
+                        <div class="input-grid-double" style="margin-bottom: 20px;">
+                            <div class="input-group">
+                                <label class="input-label" for="newContactName">Ime kontakt osobe:</label>
+                                <input type="text" id="newContactName" class="settings-input" placeholder="Npr. Marko Marković">
+                            </div>
+                            <div class="input-group">
+                                <label class="input-label" for="newContactPhone">Telefon kontakt osobe:</label>
+                                <input type="text" id="newContactPhone" class="settings-input" placeholder="Npr. +381641234567">
+                            </div>
+                        </div>
+
+                        <!-- Dodatni podaci (Sajt i Instagram) -->
+                        <div class="input-grid-double" style="margin-bottom: 20px;">
+                            <div class="input-group">
+                                <label class="input-label" for="newWebsite">Zvanični sajt benda:</label>
+                                <input type="text" id="newWebsite" class="settings-input" placeholder="Npr. www.yourband.com">
+                            </div>
+                            <div class="input-group">
+                                <label class="input-label" for="newInstagram">Instagram nalog benda:</label>
+                                <input type="text" id="newInstagram" class="settings-input" placeholder="Npr. @yourband">
+                            </div>
+                        </div>
+
+                        <button id="connectBtn" class="btn-connect" onclick="addNewBandSubmit()">Osnuj novi bend</button>
+                    </div>
+
+                    <!-- Podešavanja / Izmena postojećeg benda (Samo za Šefa / Admina) -->
+                    <div id="editBandForm" style="display: none;">
+                        <h3 id="editSectionTitle" class="band-admin-title">✏️ Uredi Aktivni Bend</h3>
+                        <div class="input-group" style="margin-bottom: 12px;">
+                            <label id="renameBandLabel" class="input-label" for="editBandName">Naziv trenutnog benda:</label>
+                            <input type="text" id="editBandName" class="settings-input">
+                        </div>
+                        <div class="input-group" style="margin-bottom: 12px;">
+                            <label id="renameBandUrlLabel" class="input-label" for="editBandUrl">Link Drive foldera:</label>
+                            <input type="text" id="editBandUrl" class="settings-input">
+                        </div>
+
+                        <!-- Geografija za uredi bend -->
+                        <div class="input-grid-double" style="margin-bottom: 12px;">
+                            <div class="input-group">
+                                <label class="input-label" for="editBandCountry">Država:</label>
+                                <select id="editBandCountry" class="settings-input" onchange="handleCountryChange(this, 'editBandCity', 'editBandCustomCountryInput', 'editBandCustomCityInput')">
+                                    <!-- Popunjava se iz JS-a -->
+                                </select>
+                                <input type="text" id="editBandCustomCountryInput" class="settings-input" style="display: none; margin-top: 5px;" placeholder="Unesi državu">
+                            </div>
+                            <div class="input-group">
+                                <label class="input-label" for="editBandCity">Grad:</label>
+                                <select id="editBandCity" class="settings-input" onchange="handleCityChange(this, 'editBandCustomCityInput')">
+                                    <!-- Popunjava se iz JS-a -->
+                                </select>
+                                <input type="text" id="editBandCustomCityInput" class="settings-input" style="display: none; margin-top: 5px;" placeholder="Unesi grad">
+                            </div>
+                        </div>
+
+                        <!-- Kontakt podaci za uredi bend -->
+                        <div class="input-grid-double" style="margin-bottom: 12px;">
+                            <div class="input-group">
+                                <label class="input-label" for="editContactName">Ime kontakt osobe:</label>
+                                <input type="text" id="editContactName" class="settings-input">
+                            </div>
+                            <div class="input-group">
+                                <label class="input-label" for="editContactPhone">Telefon kontakt osobe:</label>
+                                <input type="text" id="editContactPhone" class="settings-input">
+                            </div>
+                        </div>
+
+                        <!-- Dodatni podaci (Sajt i Instagram) -->
+                        <div class="input-grid-double" style="margin-bottom: 20px;">
+                            <div class="input-group">
+                                <label class="input-label" for="editWebsite">Zvanični sajt benda:</label>
+                                <input type="text" id="editWebsite" class="settings-input">
+                            </div>
+                            <div class="input-group">
+                                <label class="input-label" for="editInstagram">Instagram nalog benda:</label>
+                                <input type="text" id="editInstagram" class="settings-input">
+                            </div>
+                        </div>
+                        
+                        <div style="display: flex; gap: 15px;">
+                            <button id="renameBtn" class="btn-connect" onclick="updateBandSubmit()">Sačuvaj izmene</button>
+                            <button id="deleteBandBtn" class="btn-stop" onclick="deleteActiveBand()">❌ Obriši bend</button>
+                        </div>
+                    </div>
+
+                    <!-- Članovi benda, pristupni kodovi i slanje pozivnica -->
+                    <div id="membersManagementSection" style="display: none;">
+                        <h3 id="bandMembersTitle" class="band-admin-title">👥 Članovi benda</h3>
+                        <div id="bandMembersList" style="margin-bottom: 20px; display: flex; flex-direction: column; gap: 8px;">
+                            <!-- Dinamička lista članova sa ulogama -->
+                        </div>
+                        
+                        <div class="sidebar-divider" style="margin: 20px 0;"></div>
+                        
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px;">
+                            <div>
+                                <h4 id="bandCodeTitle" class="input-label" style="font-size: 1em; color: var(--text-primary); margin-bottom: 8px;">🔑 Pristupni kod benda:</h4>
+                                <div style="display: flex; gap: 10px;">
+                                    <input type="text" id="bandJoinCodeDisplay" class="settings-input" readonly style="text-align: center; font-weight: bold; font-size: 1.1em; letter-spacing: 2px;">
+                                    <button class="btn-secondary" style="padding: 6px 12px; font-size: 0.85em;" onclick="regenerateJoinCode()">🔄</button>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <h4 id="joinCodeLabel" class="input-label" style="font-size: 1em; color: var(--text-primary); margin-bottom: 8px;">Kod za učlanjenje u drugi bend:</h4>
+                                <div style="display: flex; gap: 10px;">
+                                    <input type="text" id="joinCodeInput" class="settings-input" placeholder="Npr. GL123456">
+                                    <button id="joinCodeSubmitBtn" class="btn-connect" onclick="submitJoinCode()">Priključi se</button>
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Grid dugmadi poput Giglist-a -->
-                    <div class="dashboard-grid">
-                        <button id="gridBtnSongs" class="grid-btn" onclick="switchTab('songs')">🎵 Stemovi</button>
-                        <button id="gridBtnMembers" class="grid-btn" onclick="switchTab('members')">👥 Članovi</button>
-                        <button id="gridBtnSettings" class="grid-btn" onclick="switchTab('settings')">⚙️ Podešavanja</button>
-                        <button id="gridBtnConcerts" class="grid-btn" style="opacity: 0.5; cursor: not-allowed;" disabled>📅 Svirke</button>
-                        <button id="gridBtnKit" class="grid-btn" style="opacity: 0.5; cursor: not-allowed;" disabled>🎸 Oprema</button>
-                        <button id="gridBtnDocs" class="grid-btn" style="opacity: 0.5; cursor: not-allowed;" disabled>📄 Dokumenti</button>
-                    </div>
                 </div>
             </div>
 
-            <!-- Tab: Stemovi Plejer -->
-            <div id="tabSongs" class="tab-content workspace-body" style="display: none;">
-                <!-- Player zaglavlje i status -->
-                <div class="player-controls">
-                    <button id="playBtn" class="btn-connect" onclick="playAudio()" disabled>
-                        <span>Pusti trake</span>
-                    </button>
-                    <button id="stopBtn" class="btn-connect" style="background-color: var(--border-color);" onclick="stopAudio()" disabled>
-                        <span>Zaustavi</span>
-                    </button>
-                    <span id="timeDisplay" style="font-family: monospace; font-size: 1.25em; color: var(--primary-color);">00:00</span>
-                    
-                    <div style="height: 24px; width: 1px; background-color: var(--border-color); margin: 0 10px;"></div>
-                    
-                    <span id="masterVolLabel" style="font-size: 0.85em; color: var(--text-muted);">MASTER:</span>
-                    <input type="range" id="masterVolumeRange" min="0" max="1" step="0.02" value="0.8" style="width: 100px;" oninput="setMasterVolume(this.value)">
-                    <button id="masterMuteBtn" class="btn-mute" style="padding: 6px 12px;" onclick="toggleMasterMute()">UTIŠAJ SVE</button>
-                </div>
-
-                <div id="statusLabel" style="font-size: 0.9em; color: var(--text-muted); margin-bottom: 15px;">Izaberite pesmu sa liste da započnete...</div>
-
-                <!-- Mikser kanala -->
-                <div id="tracksContainer" class="tracks-container">
-                    <!-- Dinamičke horizontalne trake kanala -->
-                </div>
-            </div>
-
-            <!-- Tab: Članovi Benda -->
-            <div id="tabMembers" class="tab-content workspace-body" style="display: none;">
-                <h3 style="font-size: 1.4em; font-weight: 400; margin-bottom: 15px;" id="bandMembersTitle">👥 Članovi benda</h3>
-                <table style="width: 100%; border-collapse: collapse; background-color: var(--bg-sidebar); border-radius: 8px; overflow: hidden; border: 1px solid var(--border-color);">
-                    <thead>
-                        <tr style="background-color: var(--bg-input); text-align: left; border-bottom: 1px solid var(--border-color);">
-                            <th style="padding: 12px 15px;">Muzičar</th>
-                            <th style="padding: 12px 15px;">Uloga</th>
-                            <th style="padding: 12px 15px;">Akcija</th>
-                        </tr>
-                    </thead>
-                    <tbody id="bandMembersList">
-                        <!-- Članovi učitani iz baze -->
-                    </tbody>
-                </table>
-
-                <div style="margin-top: 25px; border-top: 1px solid var(--border-color); padding-top: 20px;">
-                    <button class="btn-connect" style="background-color: var(--accent-red);" onclick="leaveBandSubmit()" id="memberLeaveBtn">🚪 Napusti bend</button>
-                </div>
-            </div>
-
-            <!-- Tab: Podešavanja Benda (Samo za šefa benda) -->
-            <div id="tabSettings" class="tab-content workspace-body" style="display: none;">
-                <h3 style="font-size: 1.4em; font-weight: 400; margin-bottom: 15px;" id="editBandTitle">✏️ Uredi Aktivni Bend</h3>
+            <!-- VIEW B: Repertoar & Stem Player (ELEGANTNI SINGLE PANEL / RESPONSIVE GRUPISANJE) -->
+            <div id="stemsPlayerContainer" class="stems-player-container-responsive" style="display: none;">
                 
-                <div style="max-width: 480px; display: flex; flex-direction: column; gap: 15px;">
-                    <div class="input-group">
-                        <label id="editBandNameLabel" class="input-label">Naziv benda:</label>
-                        <input type="text" id="editBandName" class="settings-input">
-                    </div>
-                    
-                    <div class="input-group">
-                        <label id="editBandUrlLabel" class="input-label">Google Drive Link Foldera:</label>
-                        <input type="text" id="editBandUrl" class="settings-input">
+                <!-- KOLONA 2: Repertoar / Lista Pesama -->
+                <div id="repertoireColumn" class="repertoire-column">
+                    <!-- Brza pretraga -->
+                    <div class="search-container">
+                        <input type="text" id="searchInput" class="search-input" placeholder="🔍 Pretraži pesmu..." oninput="filterSongs(this.value)">
                     </div>
 
-                    <div class="input-group">
-                        <label id="editBandCountryLabel" class="input-label">Država:</label>
-                        <select id="editBandCountry" class="settings-input"></select>
+                    <!-- Naslov i Spisak pesama -->
+                    <div class="songs-title-container">
+                        <span id="songsTitle" class="songs-title">📋 Spisak Pesama</span>
+                        <button id="btnBackToDashboardLink" class="btn-back-dash" onclick="exitRepertoireToDashboard()">◀ Nazad</button>
                     </div>
-                    <div id="editCustomCountryGroup" class="input-group" style="display: none;">
-                        <input type="text" id="editBandCustomCountryInput" class="settings-input" placeholder="Unesi državu">
-                    </div>
-
-                    <div class="input-group">
-                        <label id="editBandCityLabel" class="input-label">Grad:</label>
-                        <select id="editBandCity" class="settings-input"></select>
-                    </div>
-                    <div id="editCustomCityGroup" class="input-group" style="display: none;">
-                        <input type="text" id="editBandCustomCityInput" class="settings-input" placeholder="Unesi grad">
-                    </div>
-
-                    <div class="input-group">
-                        <label id="editBandContactNameLabel" class="input-label">Ime kontakt osobe:</label>
-                        <input type="text" id="editBandContactName" class="settings-input">
-                    </div>
-
-                    <div class="input-group">
-                        <label id="editBandContactPhoneLabel" class="input-label">Telefon kontakt osobe:</label>
-                        <input type="text" id="editBandContactPhone" class="settings-input">
-                    </div>
-
-                    <div class="input-group">
-                        <label id="editBandWebsiteLabel" class="input-label">Zvanični sajt benda:</label>
-                        <input type="text" id="editBandWebsite" class="settings-input">
-                    </div>
-
-                    <div class="input-group">
-                        <label id="editBandInstagramLabel" class="input-label">Instagram link:</label>
-                        <input type="text" id="editBandInstagram" class="settings-input">
-                    </div>
-
-                    <div style="display: flex; gap: 15px; margin-top: 15px;">
-                        <button id="editBandSaveBtn" class="btn-connect" onclick="saveBandSettings()">Sačuvaj izmene</button>
-                        <button id="regenerateCodeBtn" class="btn-connect" style="background-color: var(--border-color);" onclick="regenerateAccessCode()">Regeneriši kod</button>
-                    </div>
-
-                    <div style="margin-top: 35px; border-top: 1px solid var(--border-color); padding-top: 20px;">
-                        <h4 style="color: var(--accent-red); margin-bottom: 10px;" id="editBandDeleteBtn">Obriši bend</h4>
-                        <button class="btn-connect" style="background-color: var(--accent-red);" onclick="deleteBandSubmit()">❌ Obriši ovaj bend</button>
+                    <div id="songsList" class="songs-list">
+                        <!-- Popunjava se dinamički iz drajva aktivnog benda -->
                     </div>
                 </div>
-            </div>
 
-            <!-- Tab: Novi Bend Form -->
-            <div id="tabNewBand" class="tab-content workspace-body" style="display: none;">
-                <h3 style="font-size: 1.4em; font-weight: 400; margin-bottom: 15px;" id="newBandTitle">➕ Osnuj Novi Bend</h3>
-                <div style="max-width: 480px; display: flex; flex-direction: column; gap: 15px;">
-                    <div class="input-group">
-                        <label id="newBandNameLabel" class="input-label">Naziv benda:</label>
-                        <input type="text" id="newBandName" class="settings-input" placeholder="Npr. Fankomatics">
-                    </div>
-                    <div class="input-group">
-                        <label id="newBandUrlLabel" class="input-label">Google Drive Link Foldera:</label>
-                        <input type="text" id="newBandUrl" class="settings-input" placeholder="Poveži sa drajvom">
-                    </div>
-
-                    <div class="input-group">
-                        <label id="newBandCountryLabel" class="input-label">Država:</label>
-                        <select id="newBandCountry" class="settings-input"></select>
-                    </div>
-                    <div id="newCustomCountryGroup" class="input-group" style="display: none;">
-                        <input type="text" id="newBandCustomCountryInput" class="settings-input" placeholder="Unesi državu">
-                    </div>
-
-                    <div class="input-group">
-                        <label id="newBandCityLabel" class="input-label">Grad:</label>
-                        <select id="newBandCity" class="settings-input"></select>
-                    </div>
-                    <div id="newCustomCityGroup" class="input-group" style="display: none;">
-                        <input type="text" id="newBandCustomCityInput" class="settings-input" placeholder="Unesi grad">
-                    </div>
-
-                    <div class="input-group">
-                        <label id="newBandContactNameLabel" class="input-label">Ime kontakt osobe:</label>
-                        <input type="text" id="newBandContactName" class="settings-input" placeholder="Npr. Petar Pevač">
-                    </div>
-                    <div class="input-group">
-                        <label id="newBandContactPhoneLabel" class="input-label">Telefon kontakt osobe:</label>
-                        <input type="text" id="newBandContactPhone" class="settings-input" placeholder="Npr. +38164...">
-                    </div>
-                    <div class="input-group">
-                        <label id="newBandWebsiteLabel" class="input-label">Zvanični sajt benda:</label>
-                        <input type="text" id="newBandWebsite" class="settings-input" placeholder="https://tvojbend.com">
-                    </div>
-                    <div class="input-group" style="margin-bottom: 15px;">
-                        <label id="newBandInstagramLabel" class="input-label">Instagram link:</label>
-                        <input type="text" id="newBandInstagram" class="settings-input" placeholder="https://instagram.com/tvojbend">
+                <!-- KOLONA 3: Mikser / Plejer (Centralni radni deo za audio) -->
+                <div class="workspace-wrapper">
+                    <!-- Status audio mašine i master kontrole -->
+                    <div class="player-status-card">
+                        <!-- Na mobilnom: dugme da se vratiš nazad na spisak pesama! -->
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                            <button id="mobileBackToSongsBtn" class="btn-secondary" style="padding: 4px 10px; font-size:0.8em;" onclick="stemsPlayerContainer.classList.remove('song-loaded')">◀ Spisak pesama</button>
+                            <span style="font-size: 0.8em; color: var(--text-muted);">GigLab Mixer</span>
+                        </div>
+                        
+                        <div id="statusLabel" class="status-label">Prijavi se i izaberi pesmu da započneš...</div>
+                        
+                        <div class="master-controls">
+                            <div class="controls-buttons-group">
+                                <button id="playBtn" class="btn-connect" onclick="togglePlay()" disabled>
+                                    <span>Pusti trake</span>
+                                </button>
+                                <button id="stopBtn" class="btn-stop" onclick="stopAudio()" disabled>
+                                    <span>Zaustavi</span>
+                                </button>
+                            </div>
+                            
+                            <!-- Master jačina zvuka -->
+                            <div class="volume-container">
+                                <span id="masterVolLabel" class="input-label" style="margin-bottom: 0;">MASTER:</span>
+                                <input type="range" id="masterVolumeSlider" class="vol-slider" min="0" max="1" step="0.01" value="0.8" oninput="setMasterVolume(this.value)">
+                                <button id="masterMuteBtn" class="btn-mute" style="width: auto; padding: 6px 12px;" onclick="toggleMasterMute()">UTIŠAJ SVE</button>
+                            </div>
+                        </div>
                     </div>
 
-                    <button id="newBandSubmitBtn" class="btn-connect" onclick="addNewBandSubmit()">Osnuje novi bend</button>
+                    <!-- Mikseta gde se dinamički iscrtavaju kanali učitane pesme -->
+                    <div id="tracksContainer" class="mixer">
+                        <!-- Kanali se crtaju dinamički iz JavaScript-a -->
+                    </div>
                 </div>
-            </div>
 
-            <!-- Tab: Pridruži se Bendu Form -->
-            <div id="tabJoinBand" class="tab-content workspace-body" style="display: none;">
-                <h3 style="font-size: 1.4em; font-weight: 400; margin-bottom: 15px;" id="joinBandTitle">🔑 Priključi se bendu</h3>
-                <div style="max-width: 480px; display: flex; flex-direction: column; gap: 15px;">
-                    <div class="input-group">
-                        <label id="joinCodeLabel" class="input-label">Unesite pristupni kod benda:</label>
-                        <input type="text" id="joinCodeInput" class="settings-input" placeholder="GL-XXXX" style="font-size: 1.1em; text-transform: uppercase;">
-                    </div>
-                    <button id="joinCodeSubmitBtn" class="btn-connect" onclick="submitJoinCode()">Pridruži se</button>
-                </div>
             </div>
 
         </div>
+
     </div>
 
-    <!-- PODEŠAVANJA MODAL (Gospodski prilagođeno!) -->
+    <!-- PODEŠAVANJA MODAL (Sa 4 organizovana taba) -->
     <div id="settingsModal" class="modal-overlay" style="display: none;">
         <div class="modal-content">
             <div class="modal-header">
@@ -356,6 +404,7 @@
                 <button class="modal-close-btn" onclick="closeSettingsModal()">×</button>
             </div>
             
+            <!-- Tabovi podešavanja -->
             <div class="modal-tabs">
                 <button id="tabBtnRegional" class="modal-tab active" onclick="switchSettingsTab('Regional')">Aplikacija</button>
                 <button id="tabBtnProfile" class="modal-tab" onclick="switchSettingsTab('Profile')">Profil</button>
@@ -364,105 +413,125 @@
             </div>
             
             <div class="modal-body">
-                <!-- Tab: Regional / Aplikacija -->
+                <!-- Tab 1: Regional / Aplikacija -->
                 <div id="settingsTabRegional" class="modal-tab-content">
                     <div class="input-group">
-                        <label class="input-label">Format vremena:</label>
-                        <select id="settingTimeFormat" class="settings-input">
+                        <label id="timeFormatLabel" class="input-label">Format vremena:</label>
+                        <select id="settingTimeFormat" class="settings-input" style="background-color: var(--bg-input);">
                             <option value="24h">24h format (Npr. 21:15)</option>
                             <option value="12h">12h format (Npr. 09:15 PM)</option>
                         </select>
                     </div>
                     <div class="input-group" style="margin-top: 15px;">
                         <label id="dateFormatLabel" class="input-label">Format datuma:</label>
-                        <select id="settingDateFormat" class="settings-input">
+                        <select id="settingDateFormat" class="settings-input" style="background-color: var(--bg-input);">
                             <option value="dd.mm.yyyy">dd.mm.yyyy (Npr. 19.08.2026)</option>
                             <option value="mm/dd/yyyy">mm/dd/yyyy (Npr. 08/19/2026)</option>
-                            <option value="Custom">Custom...</option>
                         </select>
                     </div>
-                    <div id="customDateFormatGroup" class="input-group" style="display: none; margin-top: 5px;">
-                        <input type="text" id="customDateFormatInput" class="settings-input" placeholder="Npr. YYYY-MM-DD">
-                    </div>
-
                     <div class="input-group" style="margin-top: 15px;">
                         <label id="timezoneLabel" class="input-label">Vremenska zona:</label>
-                        <select id="settingTimezone" class="settings-input">
+                        <select id="settingTimezone" class="settings-input" style="background-color: var(--bg-input);">
                             <option value="Europe/Belgrade">Europe/Belgrade (GMT+2)</option>
                             <option value="UTC">UTC (GMT+0)</option>
-                            <option value="Custom">Custom...</option>
                         </select>
                     </div>
-                    <div id="customTimezoneGroup" class="input-group" style="display: none; margin-top: 5px;">
-                        <input type="text" id="customTimezoneInput" class="settings-input" placeholder="Npr. Europe/London">
-                    </div>
-
-                    <div class="input-group" style="margin-top: 15px;">
-                        <label class="input-label">Temperatura:</label>
-                        <select id="settingTempUnit" class="settings-input">
-                            <option value="C">Celzijus (°C)</option>
-                            <option value="F">Farenhajt (°F)</option>
-                        </select>
-                    </div>
-                    <button class="btn-connect" style="width: 100%; margin-top: 20px;" onclick="saveApplicationSettings()">Sačuvaj</button>
                 </div>
                 
-                <!-- Tab: Profil -->
+                <!-- Tab 2: Profile -->
                 <div id="settingsTabProfile" class="modal-tab-content" style="display: none;">
+                    <div style="display: flex; align-items: center; gap: 20px; margin-bottom: 20px;">
+                        <div class="user-avatar" id="settingsAvatarCircle" style="width: 65px; height: 65px; font-size: 1.8em;">M</div>
+                        <div>
+                            <button id="btnUploadAvatar" class="btn-secondary" onclick="triggerAvatarUpload()">Izaberi sliku</button>
+                            <input type="file" id="avatarFileInput" accept="image/*" style="display: none;" onchange="handleAvatarUpload(this)">
+                        </div>
+                    </div>
+                    
                     <div class="input-group">
-                        <label class="input-label">Email adresa:</label>
-                        <input type="text" id="settingEmail" class="settings-input" readonly style="opacity: 0.6; cursor: not-allowed;">
+                        <label id="profileEmailLabel" class="input-label">Email adresa:</label>
+                        <input type="email" id="settingEmail" class="settings-input" readonly style="opacity: 0.6; cursor: not-allowed;">
                     </div>
                     <div class="input-group" style="margin-top: 15px;">
-                        <label class="input-label">Ime muzičara:</label>
+                        <label id="profileNameLabel" class="input-label">Tvoje ime (muzičar):</label>
                         <input type="text" id="settingDisplayName" class="settings-input">
                     </div>
+                    
+                    <!-- Dvojezična dugmad za jezik unutar profila -->
                     <div class="input-group" style="margin-top: 15px;">
-                        <label class="input-label">Profilna slika (Avatar):</label>
-                        <input type="file" id="settingAvatarFile" class="settings-input" accept="image/*" onchange="uploadUserAvatar(event)">
+                        <label id="profileLanguageLabel" class="input-label">Jezik aplikacije / App Language:</label>
+                        <select id="settingLanguage" class="settings-input" style="background-color: var(--bg-input);">
+                            <option value="sr">Srpski jezik</option>
+                            <option value="en">English language</option>
+                        </select>
                     </div>
-                    <button class="btn-connect" style="width: 100%; margin-top: 20px;" onclick="saveProfileSettings()">Sačuvaj</button>
+
+                    <!-- Geografija za korisnika unutar profila -->
+                    <div class="input-grid-double" style="margin-top: 15px;">
+                        <div class="input-group">
+                            <label class="input-label" for="settingCountry">Država:</label>
+                            <select id="settingCountry" class="settings-input" onchange="handleCountryChange(this, 'settingCity', 'settingCustomCountryInput', 'settingCustomCityInput')">
+                                <!-- Popunjava se iz JS-a -->
+                            </select>
+                            <input type="text" id="settingCustomCountryInput" class="settings-input" style="display: none; margin-top: 5px;" placeholder="Unesi državu">
+                        </div>
+                        <div class="input-group">
+                            <label class="input-label" for="settingCity">Grad:</label>
+                            <select id="settingCity" class="settings-input" onchange="handleCityChange(this, 'settingCustomCityInput')">
+                                <!-- Popunjava se iz JS-a -->
+                            </select>
+                            <input type="text" id="settingCustomCityInput" class="settings-input" style="display: none; margin-top: 5px;" placeholder="Unesi grad">
+                        </div>
+                    </div>
                 </div>
                 
-                <!-- Tab: Lozinka -->
+                <!-- Tab 3: Password -->
                 <div id="settingsTabPassword" class="modal-tab-content" style="display: none;">
                     <div class="input-group">
-                        <label class="input-label">Nova lozinka:</label>
+                        <label id="newPasswordLabel" class="input-label">Nova lozinka:</label>
                         <input type="password" id="settingNewPassword" class="settings-input" placeholder="Najmanje 6 karaktera">
                     </div>
-                    <button class="btn-connect" style="width: 100%; margin-top: 20px;" onclick="changePasswordSubmit()">Promeni lozinku</button>
                 </div>
                 
-                <!-- Tab: Nalog -->
+                <!-- Tab 4: Account / Nalog -->
                 <div id="settingsTabAccount" class="modal-tab-content" style="display: none;">
-                    <p style="color: var(--accent-red); font-size: 0.9em; margin-bottom: 15px;">Brisanjem naloga trajno brišete sve svoje bendove u kojima ste jedini vlasnik, profile, i sačuvane podatke.</p>
-                    <button class="btn-connect" style="background-color: var(--accent-red); width: 100%;" onclick="deleteAccountSubmit()">Izbriši nalog</button>
+                    <p id="deleteAccountText" style="color: var(--text-secondary); line-height: 1.5; margin-bottom: 20px;">
+                        Brisanjem naloga trajno brišete sve svoje podatke, bendove u kojima ste osnivač i sačuvane mikseve.
+                    </p>
+                    <button id="btnDeleteAccount" class="btn-stop" onclick="deleteCurrentUserAccount()">Trajno obriši moj nalog</button>
                 </div>
+            </div>
+            
+            <div class="modal-footer">
+                <button id="btnCancelSettings" class="btn-secondary" onclick="closeSettingsModal()">Otkaži</button>
+                <button id="btnSaveSettings" class="btn-connect" onclick="saveSettings()">Sačuvaj</button>
             </div>
         </div>
     </div>
 
-    <!-- PODRŠKA / PRIJAVI PROBLEM MODAL -->
+    <!-- MODAL ZA PODRŠKU (💬 Prijavi problem) -->
     <div id="supportModal" class="modal-overlay" style="display: none;">
-        <div class="modal-content" style="max-width: 480px;">
+        <div class="modal-content" style="max-width: 450px;">
             <div class="modal-header">
                 <h3 id="supportModalTitle" class="modal-title">💬 Prijavi problem</h3>
-                <button class="modal-close-btn" onclick="closeSupportModal()">×</button>
+                <button class="modal-close-btn" onclick="toggleSupportModal()">×</button>
             </div>
-            <div class="modal-body" style="display: flex; flex-direction: column; gap: 15px;">
-                <div class="input-group">
-                    <label id="supportSubjectLabel" class="input-label">Naslov poruke:</label>
-                    <input type="text" id="supportSubject" class="settings-input" placeholder="Npr. Problem sa učitavanjem drajva">
+            <div class="modal-body">
+                <div class="input-group" style="margin-bottom: 12px;">
+                    <label id="supportSubjectLabel" class="input-label" for="supportSubject">Naslov poruke:</label>
+                    <input type="text" id="supportSubject" class="settings-input" placeholder="Npr. Problem sa očitavanjem traka">
                 </div>
                 <div class="input-group">
-                    <label id="supportMessageLabel" class="input-label">Opis problema / žalba:</label>
-                    <textarea id="supportMessage" class="settings-input" rows="5" placeholder="Ukucajte vašu žalbu ili pitanje ovde..." style="resize: none;"></textarea>
+                    <label id="supportMessageLabel" class="input-label" for="supportMessage">Opis problema / primedba:</label>
+                    <textarea id="supportMessage" class="settings-input" style="height: 120px; resize: none; font-family: inherit; line-height: 1.4;" placeholder="Unesi opis problema ili primedbu ovde..."></textarea>
                 </div>
-                <button id="supportSubmitBtn" class="btn-connect" onclick="submitSupportTicket()">Pošalji podršci</button>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="toggleSupportModal()">Otkaži</button>
+                <button id="supportSendBtn" class="btn-connect" onclick="submitSupportTicket()">Pošalji</button>
             </div>
         </div>
     </div>
 
-    <script src="app.js"></script>
 </body>
 </html>
