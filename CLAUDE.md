@@ -34,6 +34,30 @@ izmena je nov numerisan fajl).
    vidi kontakt lokala, šta vidi zamena, ko sme da izbaci člana) proverava se u PHP-u pre
    nego što podatak napusti server.
 
+## Dizajn i korisnik
+
+Korisnik je muzičar, često ne-tehnički, i većinu vremena koristi **telefon** (računar retko i
+nerado). Iz toga slede pravila koja važe za svaki ekran:
+
+1. **Telefon je prvi.** Svaki ekran se osmišljava istovremeno za tri veličine — telefon
+   (do 600 px), tablet (600–1024 px, često položen na notni stalak) i računar (preko 1024 px).
+   Nijedan ekran nije gotov dok ne radi dobro na sve tri. Na telefonu: glavna navigacija je
+   traka sa ikonama na dnu ekrana (na dohvat palca); na tabletu/računaru bočni meni.
+2. **Poznati obrasci, ne izmišljeni.** Prijava, registracija, reset lozinke, podešavanja,
+   pozivanje članova — izgledaju i rade onako kako korisnik zna sa drugih aplikacija
+   (Google/Instagram/Spotify): dugme "Nastavi sa Google-om" na vrhu, email + lozinka ispod,
+   "Zaboravljena lozinka?" uz polje za lozinku, prikaz lozinke okom, jasne poruke o grešci
+   ispod polja.
+3. **Jasno prosečnom korisniku.** Bez tehničkih reči (API, token, folder ID, sinhronizacija
+   gde god može drugačije). Dugmad kažu šta rade ("Dodaj pesmu", ne "Nova stavka"). Svaka
+   prazna strana objašnjava šta ide tu i ima dugme za prvi korak.
+4. **Za upotrebu na bini.** Veliki dodirni ciljevi (najmanje 44 px), čitljiv tekst pesme sa
+   podesivom veličinom, tamna tema kao podrazumevana (mračne bine), ekran ne sme da se ugasi
+   dok je otvorena pesma ili setlista u režimu svirke.
+5. **Moderan i dosledan izgled.** Jedan skup boja, razmaka i komponenti (dugmad, kartice,
+   polja, modali) definisan na jednom mestu i korišćen svuda — ne stilovi pisani usput po
+   ekranima. Izgled stare verzije (v1.4.08) se NE preuzima.
+
 ## Stack
 
 - **Backend**: PHP 8.1+ bez framework-a, PDO + MySQL/MariaDB (InnoDB, utf8mb4).
